@@ -39,6 +39,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: "build ui"
+        run: |
+          pnpm i
+          pnpm run build
+
       - name: run cross-build
         uses: ahaoboy/cross-build@v1
         with:
