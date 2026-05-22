@@ -194,7 +194,7 @@ fn format_propfind_entry(
 }
 
 /// GET - download file
-async fn webdav_get(
+pub async fn webdav_get(
     state: &AppState,
     rel_path: Option<&str>,
 ) -> Result<Response, FsvError> {

@@ -59,7 +59,7 @@ pub struct FileInfo {
 }
 
 /// Query parameters accepted by the files and download endpoints.
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct FileParams {
     pub path: Option<String>,
 }

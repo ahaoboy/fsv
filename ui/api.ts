@@ -6,8 +6,8 @@ function base(apiBase: string): string {
 
 /** Fetch directory listing for the given path. */
 export async function listFiles(apiBase: string, path: string): Promise<FileInfo[]> {
-  const url = `${base(apiBase)}/api/list?path=${encodeURIComponent(path)}`;
-  const res = await fetch(url);
+  const url = `${base(apiBase)}/list?path=${encodeURIComponent(path)}`;
+  const res = await fetch(url, { method: 'POST' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error || `HTTP ${res.status}`);
@@ -17,7 +17,7 @@ export async function listFiles(apiBase: string, path: string): Promise<FileInfo
 
 /** Build the URL for downloading / streaming a file. */
 export function fileUrl(apiBase: string, path: string): string {
-  return `${base(apiBase)}/api/file?path=${encodeURIComponent(path)}`;
+  return `${base(apiBase)}/${path}`;
 }
 
 export function copyToClipboard(text: string): boolean {
@@ -52,8 +52,8 @@ export interface WsInfo {
 
 /** Fetch WebSocket connection statistics. */
 export async function getWsInfo(apiBase: string): Promise<WsInfo> {
-  const url = `${base(apiBase)}/api/ws-info`;
-  const res = await fetch(url);
+  const url = `${base(apiBase)}/ws-info`;
+  const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -66,8 +66,8 @@ export interface HealthStatus {
 
 /** Check server health. */
 export async function checkHealth(apiBase: string): Promise<HealthStatus> {
-  const url = `${base(apiBase)}/api/health`;
-  const res = await fetch(url);
+  const url = `${base(apiBase)}/health`;
+  const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

@@ -5,10 +5,9 @@ use tokio::sync::{broadcast, oneshot};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::error::FsvError;
-use crate::handlers::{file, health, index, list, ws_info};
 use crate::types::{AppState, Config, ServerHandle};
+use crate::unified::unified_handler;
 use crate::util::get_local_ips;
-use crate::webdav::webdav_handler;
 use crate::ws::ws_handler;
 
 /// Starts the fsv HTTP server and returns the bound addresses, port, and a control handle.
@@ -30,33 +29,23 @@ pub async fn run(config: Config) -> Result<(Vec<IpAddr>, u16, ServerHandle), Fsv
     };
 
     // Configure CORS to allow all origins, methods, and headers
-    // But exclude WebDAV routes from CORS preflight handling
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // WebDAV routes without CORS layer (WebDAV has its own OPTIONS handling)
-    let webdav_routes = axum::Router::new()
-        .route("/webdav", axum::routing::any(webdav_handler))
-        .route("/webdav/", axum::routing::any(webdav_handler))
-        .route("/webdav/{*path}", axum::routing::any(webdav_handler))
-        .with_state(state.clone());
-
-    // API routes with CORS layer
-    let api_routes = axum::Router::new()
-        .route("/", axum::routing::get(index))
-        .route("/api/list", axum::routing::get(list))
-        .route("/api/file", axum::routing::get(file))
-        .route("/api/ws-info", axum::routing::get(ws_info))
-        .route("/api/health", axum::routing::get(health))
+    // Unified routing: all paths use the same handler
+    // HTTP method determines behavior:
+    // - GET: HTML (root) or file download
+    // - POST: API calls
+    // - PROPFIND/OPTIONS/HEAD: WebDAV protocol
+    // Exception: /ws for WebSocket upgrade
+    let app = axum::Router::new()
         .route("/ws", axum::routing::get(ws_handler))
+        .route("/", axum::routing::any(unified_handler))
+        .route("/{*path}", axum::routing::any(unified_handler))
         .layer(cors)
         .with_state(state);
-
-    let app = axum::Router::new()
-        .merge(webdav_routes)
-        .merge(api_routes);
 
     tokio::spawn(async move {
         axum::serve(listener, app)
