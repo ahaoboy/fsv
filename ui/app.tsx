@@ -28,7 +28,8 @@ export function App() {
   const [apiBase, setApiBase] = useState(() => localStorage.getItem('fsv_api_base') ?? '/');
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
-  const [qrFile, setQrFile] = useState<FileInfo | null>(null); const [showSettings, setShowSettings] = useState(false);
+  const [qrFile, setQrFile] = useState<FileInfo | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [wsToast, setWsToast] = useState<string | null>(null);
 
   const { files, loading, error, refresh } = useFileList(currentPath, apiBase);
