@@ -30,8 +30,8 @@ local-ip-address = "0.6"
 futures-util = "0.3"
 tokio-util = { version = "0.7", features = ["io"] }
 find_port = "0.1"
-quick-xml = { version = "0.36", features = ["serialize"] }
 httpdate = "1"
+webdav-serde = { version = "0.1", git = "https://github.com/ahaoboy/webdav-serde.git" }
 
 [dev-dependencies]
 tokio-tungstenite = "0.29"

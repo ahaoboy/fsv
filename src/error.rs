@@ -29,6 +29,9 @@ pub enum FsvError {
 
     #[error("Target is a directory, not a file")]
     NotAFile,
+
+    #[error("Invalid range request")]
+    InvalidRange,
 }
 
 /// Maps `FsvError` variants to HTTP status codes and JSON error bodies.
@@ -38,6 +41,7 @@ impl IntoResponse for FsvError {
             FsvError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             FsvError::AccessDenied => (StatusCode::FORBIDDEN, self.to_string()),
             FsvError::NotAFile => (StatusCode::BAD_REQUEST, self.to_string()),
+            FsvError::InvalidRange => (StatusCode::RANGE_NOT_SATISFIABLE, self.to_string()),
             FsvError::Io(ref e) => match e.kind() {
                 io::ErrorKind::NotFound => (StatusCode::NOT_FOUND, "Path not found".into()),
                 io::ErrorKind::PermissionDenied => {

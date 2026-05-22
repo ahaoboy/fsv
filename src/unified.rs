@@ -50,12 +50,18 @@ pub async fn unified_handler(
 async fn handle_get(
     State(state): State<AppState>,
     path: &str,
-    _request: Request,
+    request: Request,
 ) -> Result<Response, FsvError> {
     // Root path returns the HTML UI
     if path == "/" {
         return Ok(handlers::index().await.into_response());
     }
+
+    // Check for Range header
+    let range_header = request
+        .headers()
+        .get(axum::http::header::RANGE)
+        .and_then(|v| v.to_str().ok());
 
     // All other paths: serve as files
     let rel_path = path.trim_start_matches('/');
@@ -65,7 +71,11 @@ async fn handle_get(
         Some(rel_path)
     };
 
-    webdav::webdav_get(&state, rel_path).await
+    if let Some(range) = range_header {
+        webdav::webdav_get_range(&state, rel_path, range).await
+    } else {
+        webdav::webdav_get(&state, rel_path).await
+    }
 }
 
 /// Handle POST requests - API endpoints
