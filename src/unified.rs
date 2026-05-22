@@ -3,6 +3,7 @@ use axum::{
     http::Method,
     response::{IntoResponse, Response},
 };
+use percent_encoding::percent_decode_str;
 
 use crate::error::FsvError;
 use crate::handlers;
@@ -18,7 +19,11 @@ pub async fn unified_handler(
     method: Method,
     request: Request,
 ) -> Result<Response, FsvError> {
-    let path = request.uri().path().to_string();
+    // Decode URL-encoded path (e.g., %20 -> space)
+    let path = percent_decode_str(request.uri().path())
+        .decode_utf8()
+        .unwrap_or_default()
+        .to_string();
 
     match method {
         // WebDAV methods
