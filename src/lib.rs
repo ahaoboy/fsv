@@ -1,10 +1,13 @@
 use axum::{
-    body::Body,
-    extract::{Query, State, ws::{Message, WebSocket, WebSocketUpgrade}},
-    http::header,
-    http::StatusCode,
-    response::{IntoResponse, Response},
     Json,
+    body::Body,
+    extract::{
+        Query, State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
+    http::StatusCode,
+    http::header,
+    response::{IntoResponse, Response},
 };
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -56,7 +59,10 @@ impl IntoResponse for FsvError {
                 } else if e.kind() == io::ErrorKind::PermissionDenied {
                     (StatusCode::FORBIDDEN, "Permission denied".to_string())
                 } else {
-                    (StatusCode::INTERNAL_SERVER_ERROR, format!("IO error: {}", e))
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("IO error: {}", e),
+                    )
                 }
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
@@ -86,9 +92,12 @@ impl ServerHandle {
     /// Gracefully shuts down the running Axum server.
     pub fn shutdown(&mut self) -> Result<(), FsvError> {
         if let Some(tx) = self.shutdown_tx.take() {
-            tx.send(()).map_err(|_| FsvError::Shutdown("Failed to send shutdown signal".into()))
+            tx.send(())
+                .map_err(|_| FsvError::Shutdown("Failed to send shutdown signal".into()))
         } else {
-            Err(FsvError::Shutdown("Server is already shut down or handle is uninitialized".into()))
+            Err(FsvError::Shutdown(
+                "Server is already shut down or handle is uninitialized".into(),
+            ))
         }
     }
 
@@ -130,14 +139,23 @@ pub struct FileParams {
 
 /// Helper function to list all network interface IPs.
 fn get_local_ips() -> Vec<IpAddr> {
-    let mut ips = Vec::new();
+    let is_valid_ipv4 = |ip: &IpAddr| match ip {
+        IpAddr::V4(v4) => !v4.is_link_local(),
+        IpAddr::V6(_) => false,
+    };
+
+    let primary = local_ip_address::local_ip().ok().filter(|ip| is_valid_ipv4(ip));
+
+    let mut ips: Vec<IpAddr> = primary.into_iter().collect();
+
     if let Ok(interfaces) = local_ip_address::list_afinet_netifas() {
         for (_name, ip) in interfaces {
-            if !ips.contains(&ip) {
+            if is_valid_ipv4(&ip) && !ips.contains(&ip) {
                 ips.push(ip);
             }
         }
     }
+
     if ips.is_empty() {
         ips.push(IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)));
     }
@@ -146,9 +164,9 @@ fn get_local_ips() -> Vec<IpAddr> {
 
 /// Resolves a path safely under the root path to prevent directory traversal attacks.
 fn resolve_safe_path(root_path: &Path, relative_path: Option<&str>) -> Result<PathBuf, FsvError> {
-    let canonical_root = root_path.canonicalize().map_err(|e| {
-        FsvError::PathError(format!("Failed to canonicalize root path: {}", e))
-    })?;
+    let canonical_root = root_path
+        .canonicalize()
+        .map_err(|e| FsvError::PathError(format!("Failed to canonicalize root path: {}", e)))?;
 
     if let Some(rel) = relative_path {
         // Normalize slashes and trim prefix slashes to avoid absolute path overrides
@@ -204,9 +222,10 @@ async fn list_files_handler(
     State(state): State<AppState>,
     Query(params): Query<FileParams>,
 ) -> Result<Json<Vec<FileInfo>>, FsvError> {
-    let canonical_root = state.root_path.canonicalize().map_err(|e| {
-        FsvError::PathError(format!("Failed to canonicalize root path: {}", e))
-    })?;
+    let canonical_root = state
+        .root_path
+        .canonicalize()
+        .map_err(|e| FsvError::PathError(format!("Failed to canonicalize root path: {}", e)))?;
 
     if canonical_root.is_file() {
         let info = get_file_info(&canonical_root, &canonical_root)?;
@@ -247,9 +266,10 @@ async fn download_file_handler(
     State(state): State<AppState>,
     Query(params): Query<FileParams>,
 ) -> Result<impl IntoResponse, FsvError> {
-    let canonical_root = state.root_path.canonicalize().map_err(|e| {
-        FsvError::PathError(format!("Failed to canonicalize root path: {}", e))
-    })?;
+    let canonical_root = state
+        .root_path
+        .canonicalize()
+        .map_err(|e| FsvError::PathError(format!("Failed to canonicalize root path: {}", e)))?;
 
     let target_path = if canonical_root.is_file() {
         canonical_root
@@ -288,10 +308,7 @@ async fn download_file_handler(
 }
 
 /// WebSocket route handler.
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
     ws.on_upgrade(move |socket| handle_socket(socket, state))
 }
 

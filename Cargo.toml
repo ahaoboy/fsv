@@ -2,6 +2,18 @@
 name = "fsv"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "fsv"
+repository = "https://github.com/ahaoboy/fsv"
+homepage = "https://github.com/ahaoboy/fsv"
+authors = ["ahaoboy"]
+include = [
+  "/src/**/*",
+  "/dist/**/*",
+  "/Cargo.toml",
+  "/build.rs",
+  "/README.md",
+]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -24,3 +36,16 @@ cli = ["dep:clap"]
 [[bin]]
 required-features = ["cli"]
 name = "fsv"
+
+[profile.release]
+debug = false
+lto = true
+strip = true
+opt-level = 3
+codegen-units = 1
+
+[profile.bloaty]
+debug = true
+lto = false
+strip = false
+inherits = 'release'
