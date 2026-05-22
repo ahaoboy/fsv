@@ -1,4 +1,4 @@
-import { FolderIcon, FileIcon, CodeIcon, ImageIcon, VideoIcon, DownloadIcon, EyeIcon, QrIcon } from '../icons';
+import { FolderIcon, FileIcon, CodeIcon, ImageIcon, VideoIcon, DownloadIcon, EyeIcon, QrIcon, CopyIcon } from '../icons';
 import { fileUrl } from '../api';
 import type { FileInfo } from '../types';
 import { isPreviewable } from './PreviewModal';
@@ -38,11 +38,44 @@ function formatDate(epoch: number | null): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function copyToClipboard(text: string): boolean {
+  // Modern async clipboard API (requires HTTPS or localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return true;
+  }
+
+  // Fallback: legacy execCommand with a hidden textarea
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
+  } catch {
+    return false;
+  }
+}
+
 export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) {
   const downloadUrl = fileUrl(apiBase, file.path);
 
   const handleRowClick = () => {
     if (file.is_dir) onNavigate(file);
+  };
+
+  const handleCopy = () => {
+    // Build absolute URL if apiBase is relative
+    let fullUrl = downloadUrl;
+    if (downloadUrl.startsWith('/')) {
+      fullUrl = `${window.location.origin}${downloadUrl}`;
+    }
+    copyToClipboard(fullUrl);
   };
 
   const meta = file.is_dir
@@ -70,6 +103,9 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
           <a class="action-btn" href={downloadUrl} download={file.name} title="Download" onClick={(e) => e.stopPropagation()}>
             <DownloadIcon size={16} />
           </a>
+          <button class="action-btn" title="Copy link" onClick={handleCopy}>
+            <CopyIcon size={16} />
+          </button>
           <button class="action-btn" title="QR code link" onClick={() => onQr(file)}>
             <QrIcon size={16} />
           </button>

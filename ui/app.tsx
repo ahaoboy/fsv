@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { useFileList } from './hooks/useFileList';
 import { useWebSocket } from './hooks/useWebSocket';
-import { fileUrl } from './api';
+import { copyToClipboard, fileUrl } from './api';
 import { FileCard } from './components/FileCard';
 import { PreviewModal } from './components/PreviewModal';
 import { QrModal } from './components/QrModal';
@@ -28,14 +28,14 @@ export function App() {
   const [apiBase, setApiBase] = useState(() => localStorage.getItem('fsv_api_base') ?? '/');
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
-  const [qrFile, setQrFile] = useState<FileInfo | null>(null);  const [showSettings, setShowSettings] = useState(false);
+  const [qrFile, setQrFile] = useState<FileInfo | null>(null); const [showSettings, setShowSettings] = useState(false);
   const [wsToast, setWsToast] = useState<string | null>(null);
 
   const { files, loading, error, refresh } = useFileList(currentPath, apiBase);
 
   const wsStatus = useWebSocket(apiBase, (msg) => {
     setWsToast(msg);
-    navigator.clipboard.writeText(msg).catch(() => {});
+    copyToClipboard(msg)
   });
 
   const filtered = files.filter((f) =>

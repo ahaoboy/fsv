@@ -49,9 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(ip) = primary {
         let url = format!("http://{}:{}", ip, port);
-        println!("\nScan to open:");
         qr2term::print_qr(&url).unwrap_or_else(|e| eprintln!("QR error: {e}"));
-        println!("{url}\n");
     }
 
     // Interactive prompt: each line is broadcast to all WebSocket clients.

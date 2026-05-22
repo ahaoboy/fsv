@@ -1,5 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { CopyIcon, CloseIcon } from '../icons';
+import { copyToClipboard } from '../api';
 
 interface Props {
   message: string;
@@ -13,17 +14,6 @@ export function WsToast({ message, onClose }: Props) {
     return () => clearTimeout(t);
   }, [message]);
 
-  const copy = () => {
-    navigator.clipboard.writeText(message).catch((e) => { console.error('Failed to copy WebSocket message:', e); });
-  };
-
-  useEffect(() => {
-    if (message) {
-      console.log('WebSocket message:', message);
-      copy();
-    }
-  }, [message]);
-
   return (
     <div class="ws-toast" role="alert">
       <div class="ws-toast-body">
@@ -31,7 +21,7 @@ export function WsToast({ message, onClose }: Props) {
         <p class="ws-toast-text">{message}</p>
       </div>
       <div class="ws-toast-actions">
-        <button class="ws-toast-btn" onClick={copy} title="Copy to clipboard">
+        <button class="ws-toast-btn" onClick={() => copyToClipboard(message)} title="Copy to clipboard">
           <CopyIcon size={15} />
         </button>
         <button class="ws-toast-btn" onClick={onClose} title="Dismiss">

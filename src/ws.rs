@@ -16,6 +16,9 @@ pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> 
 
 /// Manages a single WebSocket client: forwards server broadcasts and handles disconnects.
 async fn handle_socket(socket: WebSocket, state: AppState) {
+    // Increment connection count
+    state.ws_connections.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
     let (mut sender, mut receiver) = socket.split();
     let mut rx = state.ws_tx.subscribe();
 
@@ -45,4 +48,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
             }
         }
     }
+
+    // Decrement connection count
+    state.ws_connections.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
 }

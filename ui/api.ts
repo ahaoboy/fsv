@@ -19,3 +19,55 @@ export async function listFiles(apiBase: string, path: string): Promise<FileInfo
 export function fileUrl(apiBase: string, path: string): string {
   return `${base(apiBase)}/api/file?path=${encodeURIComponent(path)}`;
 }
+
+export function copyToClipboard(text: string): boolean {
+  // Modern async clipboard API (requires HTTPS or localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => { });
+    return true;
+  }
+
+  // Fallback: legacy execCommand with a hidden textarea
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
+  } catch {
+    return false;
+  }
+}
+
+/** WebSocket connection info. */
+export interface WsInfo {
+  connected: number;
+  broadcast_capacity: number;
+}
+
+/** Fetch WebSocket connection statistics. */
+export async function getWsInfo(apiBase: string): Promise<WsInfo> {
+  const url = `${base(apiBase)}/api/ws-info`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+/** Health check response. */
+export interface HealthStatus {
+  status: string;
+  timestamp: number;
+}
+
+/** Check server health. */
+export async function checkHealth(apiBase: string): Promise<HealthStatus> {
+  const url = `${base(apiBase)}/api/health`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}

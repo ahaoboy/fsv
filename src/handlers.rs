@@ -97,3 +97,23 @@ pub async fn file(
 pub async fn index() -> axum::response::Html<&'static str> {
     axum::response::Html(include_str!("../dist/index.html"))
 }
+
+/// Returns WebSocket connection statistics.
+pub async fn ws_info(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let count = state.ws_connections.load(std::sync::atomic::Ordering::Relaxed);
+    Json(serde_json::json!({
+        "connected": count,
+        "broadcast_capacity": 100,
+    }))
+}
+
+/// Health check endpoint - returns server status and uptime.
+pub async fn health() -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "status": "ok",
+        "timestamp": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    }))
+}

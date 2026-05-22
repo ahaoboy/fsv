@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicUsize;
 use tokio::sync::{broadcast, oneshot};
 
 use crate::error::FsvError;
@@ -44,6 +45,7 @@ impl ServerHandle {
 pub struct AppState {
     pub root_path: PathBuf,
     pub ws_tx: broadcast::Sender<String>,
+    pub ws_connections: std::sync::Arc<AtomicUsize>,
 }
 
 /// Metadata for a single file or directory entry.
