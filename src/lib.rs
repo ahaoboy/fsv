@@ -3,6 +3,7 @@ mod handlers;
 mod server;
 mod types;
 mod util;
+mod webdav;
 mod ws;
 
 pub use error::FsvError;
