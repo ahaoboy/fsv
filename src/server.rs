@@ -2,6 +2,7 @@ use std::net::IpAddr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tokio::sync::{broadcast, oneshot};
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::error::FsvError;
 use crate::handlers::{file, health, index, list, ws_info};
@@ -27,6 +28,12 @@ pub async fn run(config: Config) -> Result<(Vec<IpAddr>, u16, ServerHandle), Fsv
         ws_connections: ws_connections.clone(),
     };
 
+    // Configure CORS to allow all origins, methods, and headers
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let app = axum::Router::new()
         .route("/", axum::routing::get(index))
         .route("/api/list", axum::routing::get(list))
@@ -34,6 +41,7 @@ pub async fn run(config: Config) -> Result<(Vec<IpAddr>, u16, ServerHandle), Fsv
         .route("/api/ws-info", axum::routing::get(ws_info))
         .route("/api/health", axum::routing::get(health))
         .route("/ws", axum::routing::get(ws_handler))
+        .layer(cors)
         .with_state(state);
 
     tokio::spawn(async move {
