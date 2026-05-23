@@ -51,6 +51,18 @@
   color: var(--text-h);
 }
 
+.brand-github {
+  display: flex;
+  align-items: center;
+  color: var(--text-m);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.brand-github:hover {
+  opacity: 1;
+}
+
 .header-controls {
   display: flex;
   align-items: center;

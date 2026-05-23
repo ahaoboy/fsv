@@ -7,7 +7,7 @@ import { PreviewModal } from './components/PreviewModal';
 import { QrModal } from './components/QrModal';
 import { WsToast } from './components/WsToast';
 import { SettingsModal } from './components/SettingsModal';
-import { SearchIcon, RefreshIcon, SettingsIcon } from './icons';
+import { SearchIcon, RefreshIcon, SettingsIcon, GithubIcon } from './icons';
 import type { FileInfo } from './types';
 import './app.css';
 
@@ -53,6 +53,15 @@ export function App() {
           <div class="brand">
             <span class="brand-badge">FSV</span>
             <span class="brand-name">File Share Viewer</span>
+            <a
+              href="https://github.com/ahaoboy/fsv"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="brand-github"
+              title="View on GitHub"
+            >
+              <GithubIcon size={16} />
+            </a>
           </div>
           <div class="header-controls">
             <div class={`ws-dot ${wsStatus}`} title={`WebSocket: ${wsStatus}`} />
