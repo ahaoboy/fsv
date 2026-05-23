@@ -7,13 +7,7 @@ description = "fsv"
 repository = "https://github.com/ahaoboy/fsv"
 homepage = "https://github.com/ahaoboy/fsv"
 authors = ["ahaoboy"]
-include = [
-  "/src/**/*",
-  "/dist/**/*",
-  "/Cargo.toml",
-  "/build.rs",
-  "/README.md",
-]
+include = ["/src/**/*", "/dist/**/*", "/Cargo.toml", "/build.rs", "/README.md"]
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -31,7 +25,7 @@ futures-util = "0.3"
 tokio-util = { version = "0.7", features = ["io"] }
 find_port = "0.1"
 httpdate = "1"
-webdav-serde = { version = "0.1", git = "https://github.com/ahaoboy/webdav-serde.git" }
+webdav-serde = "0.1"
 
 [dev-dependencies]
 tokio-tungstenite = "0.29"
