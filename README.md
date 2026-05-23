@@ -82,6 +82,10 @@ async fn main() {
 }
 ```
 
+## Related Projects
+
+- **[fsv-tauri](https://github.com/ahaoboy/fsv-tauri)** — Desktop GUI version of fsv built with Tauri, offering the same file sharing and WebSocket broadcasting with a native window experience.
+
 ## License
 
 MIT
