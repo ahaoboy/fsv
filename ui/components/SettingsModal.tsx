@@ -1,5 +1,15 @@
-import { useState } from 'preact/hooks';
-import { CloseIcon } from '../icons';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  TextField,
+  Typography,
+  Button,
+} from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 
 interface Props {
   current: string;
@@ -7,44 +17,53 @@ interface Props {
   onClose: () => void;
 }
 
+/** Settings modal for configuring the backend API base URL. */
 export function SettingsModal({ current, onSave, onClose }: Props) {
   const [value, setValue] = useState(current);
 
-  const save = () => {
+  const handleSave = () => {
     localStorage.setItem('fsv_api_base', value);
     onSave(value);
     onClose();
   };
 
   return (
-    <div class="modal-overlay" onClick={onClose}>
-      <div class="modal-card settings-modal" onClick={(e) => e.stopPropagation()}>
-        <div class="modal-header">
-          <span class="modal-title-text">Backend Settings</span>
-          <button class="modal-close" onClick={onClose} aria-label="Close">
-            <CloseIcon size={18} />
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="api-url">Server URL</label>
-            <input
-              id="api-url"
-              type="text"
-              placeholder="http://127.0.0.1:8888"
-              value={value}
-              onInput={(e) => setValue((e.target as HTMLInputElement).value)}
-            />
-            <p class="form-help">
-              Use <code>/</code> to proxy via Vite in dev mode, or enter the full URL of your fsv instance.
-            </p>
-          </div>
-          <div class="modal-actions">
-            <button class="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button class="btn btn-primary" onClick={save}>Save</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography variant="body1" sx={{ fontWeight: 500, flex: 1 }}>
+          Backend Settings
+        </Typography>
+        <IconButton size="small" onClick={onClose} aria-label="Close">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent>
+        <TextField
+          autoFocus
+          fullWidth
+          label="Server URL"
+          placeholder="http://127.0.0.1:8888"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          size="small"
+          margin="dense"
+          slotProps={{ htmlInput: { id: 'api-url' } }}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+          Use <code>/</code> to proxy via Vite in dev mode, or enter the full URL of your fsv instance.
+        </Typography>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button variant="outlined" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSave}>
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
+

@@ -1,31 +1,23 @@
-import { useState } from 'preact/hooks';
+import { useState, useMemo } from 'react';
+import { Box, Container, Typography, CircularProgress, Button } from '@mui/material';
 import { useFileList } from './hooks/useFileList';
 import { useWebSocket } from './hooks/useWebSocket';
 import { copyToClipboard, fileUrl } from './api';
+import { Header } from './components/Header';
 import { FileCard } from './components/FileCard';
 import { PreviewModal } from './components/PreviewModal';
 import { QrModal } from './components/QrModal';
-import { WsToast } from './components/WsToast';
 import { SettingsModal } from './components/SettingsModal';
-import { SearchIcon, RefreshIcon, SettingsIcon, GithubIcon } from './icons';
+import { WsToast } from './components/WsToast';
 import type { FileInfo } from './types';
-import './app.css';
 
-function getBreadcrumbs(path: string) {
-  const segments = path.split('/').filter(Boolean);
-  const crumbs = [{ name: 'Root', path: '' }];
-  let acc = '';
-  for (const seg of segments) {
-    acc = acc ? `${acc}/${seg}` : seg;
-    crumbs.push({ name: seg, path: acc });
-  }
-  return crumbs;
-}
-
+/** Main application component. */
 export function App() {
   const [currentPath, setCurrentPath] = useState('');
   const [search, setSearch] = useState('');
-  const [apiBase, setApiBase] = useState(() => localStorage.getItem('fsv_api_base') ?? '/');
+  const [apiBase, setApiBase] = useState(
+    () => localStorage.getItem('fsv_api_base') ?? '/',
+  );
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
   const [qrFile, setQrFile] = useState<FileInfo | null>(null);
@@ -36,106 +28,134 @@ export function App() {
 
   const wsStatus = useWebSocket(apiBase, (msg) => {
     setWsToast(msg);
-    copyToClipboard(msg)
+    copyToClipboard(msg);
   });
 
-  const filtered = files.filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(
+    () => files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
+    [files, search],
   );
 
   const getQrUrl = (file: FileInfo) => fileUrl(apiBase, file.path);
 
   return (
-    <div class="fsv-app">
+    <Container
+      disableGutters
+      maxWidth="sm"
+      sx={{
+        minHeight: '100svh',
+        display: 'flex',
+        flexDirection: 'column',
+        borderLeft: 1,
+        borderRight: 1,
+        borderColor: 'divider',
+        bgcolor: 'background.default',
+      }}
+    >
       {/* ── Header ── */}
-      <header class="app-header">
-        <div class="header-top">
-          <div class="brand">
-            <span class="brand-badge">FSV</span>
-            <span class="brand-name">File Share Viewer</span>
-            <a
-              href="https://github.com/ahaoboy/fsv"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="brand-github"
-              title="View on GitHub"
-            >
-              <GithubIcon size={16} />
-            </a>
-          </div>
-          <div class="header-controls">
-            <div class={`ws-dot ${wsStatus}`} title={`WebSocket: ${wsStatus}`} />
-            <button class="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>
-              <SettingsIcon size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Breadcrumb */}
-        <nav class="breadcrumb" aria-label="Path navigation">
-          {getBreadcrumbs(currentPath).map((crumb, i, arr) => (
-            <span key={crumb.path} class="crumb-item">
-              <button class="crumb-btn" onClick={() => { setCurrentPath(crumb.path); setSearch(''); }}>
-                {crumb.name}
-              </button>
-              {i < arr.length - 1 && <span class="crumb-sep" aria-hidden="true">/</span>}
-            </span>
-          ))}
-        </nav>
-
-        {/* Search + Refresh */}
-        <div class="search-row">
-          <div class="search-box">
-            <SearchIcon size={15} />
-            <input
-              type="search"
-              placeholder="Filter files…"
-              value={search}
-              onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
-              aria-label="Filter files"
-            />
-          </div>
-          <button class="icon-btn" title="Refresh" onClick={refresh}>
-            <RefreshIcon size={16} />
-          </button>
-        </div>
-      </header>
+      <Header
+        currentPath={currentPath}
+        search={search}
+        wsStatus={wsStatus}
+        onSearchChange={setSearch}
+        onNavigate={(path) => {
+          setCurrentPath(path);
+          setSearch('');
+        }}
+        onRefresh={refresh}
+        onOpenSettings={() => setShowSettings(true)}
+      />
 
       {/* ── File List ── */}
-      <main class="file-list">
+      <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Loading state */}
         {loading && (
-          <div class="state-view">
-            <div class="spinner" />
-            <p>Loading…</p>
-          </div>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              py: 6,
+            }}
+          >
+            <CircularProgress size={32} />
+            <Typography variant="body2" color="text.secondary">
+              Loading…
+            </Typography>
+          </Box>
         )}
 
+        {/* Error state */}
         {!loading && error && (
-          <div class="state-view error-view">
-            <span class="state-icon">⚠️</span>
-            <p>{error}</p>
-            <button class="btn btn-primary" onClick={refresh}>Retry</button>
-          </div>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              py: 6,
+              px: 3,
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="h4" sx={{ opacity: 0.5 }}>
+              ⚠️
+            </Typography>
+            <Typography variant="body2" color="error">
+              {error}
+            </Typography>
+            <Button variant="contained" size="small" onClick={refresh}>
+              Retry
+            </Button>
+          </Box>
         )}
 
+        {/* Empty state */}
         {!loading && !error && filtered.length === 0 && (
-          <div class="state-view">
-            <span class="state-icon">📁</span>
-            <p>{search ? 'No files match your search.' : 'This folder is empty.'}</p>
-          </div>
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              py: 6,
+              px: 3,
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="h4" sx={{ opacity: 0.5 }}>
+              📁
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {search ? 'No files match your search.' : 'This folder is empty.'}
+            </Typography>
+          </Box>
         )}
 
-        {!loading && !error && filtered.map((file) => (
-          <FileCard
-            key={file.path}
-            file={file}
-            apiBase={apiBase}
-            onNavigate={(f) => { setCurrentPath(f.path); setSearch(''); }}
-            onPreview={setPreviewFile}
-            onQr={setQrFile}
-          />
-        ))}
-      </main>
+        {/* File list */}
+        {!loading &&
+          !error &&
+          filtered.map((file) => (
+            <FileCard
+              key={file.path}
+              file={file}
+              apiBase={apiBase}
+              onNavigate={(f) => {
+                setCurrentPath(f.path);
+                setSearch('');
+              }}
+              onPreview={setPreviewFile}
+              onQr={setQrFile}
+            />
+          ))}
+      </Box>
 
       {/* ── Modals ── */}
       {previewFile && (
@@ -166,6 +186,7 @@ export function App() {
       {wsToast && (
         <WsToast message={wsToast} onClose={() => setWsToast(null)} />
       )}
-    </div>
+    </Container>
   );
 }
+

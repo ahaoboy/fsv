@@ -1,5 +1,6 @@
 import type { FileInfo } from './types';
 
+/** Strip trailing slash from the API base URL. */
 function base(apiBase: string): string {
   return apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
 }
@@ -10,9 +11,9 @@ export async function listFiles(apiBase: string, path: string): Promise<FileInfo
   const res = await fetch(url, { method: 'POST' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error || `HTTP ${res.status}`);
+    throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
   }
-  return res.json();
+  return res.json() as Promise<FileInfo[]>;
 }
 
 /** Build the URL for downloading / streaming a file. */
@@ -20,10 +21,11 @@ export function fileUrl(apiBase: string, path: string): string {
   return `${base(apiBase)}/${path}`;
 }
 
+/** Copy text to the clipboard using the best available method. */
 export function copyToClipboard(text: string): boolean {
   // Modern async clipboard API (requires HTTPS or localhost)
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).catch(() => { });
+    navigator.clipboard.writeText(text).catch(() => undefined);
     return true;
   }
 
@@ -55,7 +57,7 @@ export async function getWsInfo(apiBase: string): Promise<WsInfo> {
   const url = `${base(apiBase)}/ws-info`;
   const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return res.json() as Promise<WsInfo>;
 }
 
 /** Health check response. */
@@ -69,5 +71,5 @@ export async function checkHealth(apiBase: string): Promise<HealthStatus> {
   const url = `${base(apiBase)}/health`;
   const res = await fetch(url, { method: 'POST' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return res.json() as Promise<HealthStatus>;
 }

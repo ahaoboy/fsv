@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
-import preact from '@preact/preset-vite'
+import react from '@vitejs/plugin-react'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [preact(), viteSingleFile()],
+  plugins: [react(), viteSingleFile()],
   server: {
     proxy: {
       '/api': {

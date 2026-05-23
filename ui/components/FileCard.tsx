@@ -1,7 +1,28 @@
-import { FolderIcon, FileIcon, CodeIcon, ImageIcon, VideoIcon, DownloadIcon, EyeIcon, QrIcon, CopyIcon } from '../icons';
-import { fileUrl } from '../api';
+import {
+  Card,
+  CardActionArea,
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  Link as MuiLink,
+} from '@mui/material';
+import {
+  Folder as FolderIcon,
+  InsertDriveFile as FileIcon,
+  Code as CodeIcon,
+  Image as ImageIcon,
+  Videocam as VideoIcon,
+  Download as DownloadIcon,
+  Visibility as EyeIcon,
+  QrCode as QrIcon,
+  ContentCopy as CopyIcon,
+} from '@mui/icons-material';
+import { fileUrl, copyToClipboard } from '../api';
 import type { FileInfo } from '../types';
 import { isPreviewable } from './PreviewModal';
+import { type JSX } from 'react';
+import prettyBytes from 'pretty-bytes';
 
 interface Props {
   file: FileInfo;
@@ -11,57 +32,40 @@ interface Props {
   onQr: (file: FileInfo) => void;
 }
 
-const CODE_EXTS = new Set(['rs', 'js', 'ts', 'tsx', 'jsx', 'html', 'htm', 'css', 'json', 'toml', 'yaml', 'yml', 'md', 'sh', 'py', 'go', 'c', 'cpp', 'h', 'java', 'rb', 'php', 'xml', 'lock']);
-const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif']);
+/** File extensions grouped by type for icon selection. */
+const CODE_EXTS = new Set([
+  'rs', 'js', 'ts', 'tsx', 'jsx', 'html', 'htm', 'css', 'json',
+  'toml', 'yaml', 'yml', 'md', 'sh', 'py', 'go', 'c', 'cpp', 'h',
+  'java', 'rb', 'php', 'xml', 'lock',
+]);
+const IMAGE_EXTS = new Set([
+  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif',
+]);
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov']);
 
-function getIcon(file: FileInfo) {
-  if (file.is_dir) return <FolderIcon class="file-type-icon folder" size={22} />;
+/** Pick the appropriate icon for a file based on its extension. */
+function getIcon(file: FileInfo): JSX.Element {
+  if (file.is_dir) {
+    return <FolderIcon sx={{ color: '#a855f7' }} fontSize="small" />;
+  }
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (IMAGE_EXTS.has(ext)) return <ImageIcon class="file-type-icon image" size={22} />;
-  if (VIDEO_EXTS.has(ext)) return <VideoIcon class="file-type-icon video" size={22} />;
-  if (CODE_EXTS.has(ext)) return <CodeIcon class="file-type-icon code" size={22} />;
-  return <FileIcon class="file-type-icon" size={22} />;
+  if (IMAGE_EXTS.has(ext)) return <ImageIcon sx={{ color: '#10b981' }} fontSize="small" />;
+  if (VIDEO_EXTS.has(ext)) return <VideoIcon sx={{ color: '#f59e0b' }} fontSize="small" />;
+  if (CODE_EXTS.has(ext)) return <CodeIcon sx={{ color: '#3b82f6' }} fontSize="small" />;
+  return <FileIcon color="action" fontSize="small" />;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-}
-
+/** Format a Unix timestamp into a fixed-width date string (YYYY-MM-DD). */
 function formatDate(epoch: number | null): string {
   if (!epoch) return '';
   const d = new Date(epoch * 1000);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-function copyToClipboard(text: string): boolean {
-  // Modern async clipboard API (requires HTTPS or localhost)
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).catch(() => {});
-    return true;
-  }
-
-  // Fallback: legacy execCommand with a hidden textarea
-  try {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.left = '-9999px';
-    textarea.style.top = '-9999px';
-    document.body.appendChild(textarea);
-    textarea.select();
-    const success = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return success;
-  } catch {
-    return false;
-  }
-}
-
+/** A single file or directory row in the file list. */
 export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) {
   const downloadUrl = fileUrl(apiBase, file.path);
 
@@ -70,7 +74,6 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
   };
 
   const handleCopy = () => {
-    // Build absolute URL if apiBase is relative
     let fullUrl = downloadUrl;
     if (downloadUrl.startsWith('/')) {
       fullUrl = `${window.location.origin}${downloadUrl}`;
@@ -80,37 +83,119 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
 
   const meta = file.is_dir
     ? 'Folder'
-    : [formatBytes(file.size), formatDate(file.modified)].filter(Boolean).join(' · ');
+    : [formatDate(file.modified), prettyBytes(file.size)].filter(Boolean).join(' · ');
+
+  // Shared icon and name blocks used by both directory and file layouts
+  const iconBox = (
+    <Box
+      sx={{
+        width: 38,
+        height: 38,
+        borderRadius: 2.5,
+        bgcolor: 'background.paper',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {getIcon(file)}
+    </Box>
+  );
+
+  const nameBox = (
+    <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 500 }}
+        noWrap
+        title={file.name}
+      >
+        {file.name}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" noWrap>
+        {meta}
+      </Typography>
+    </Box>
+  );
 
   return (
-    <div class={`file-card ${file.is_dir ? 'dir-card' : ''}`} onClick={handleRowClick} role={file.is_dir ? 'button' : undefined} tabIndex={file.is_dir ? 0 : undefined} onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}>
-      <div class="file-icon-wrap">
-        {getIcon(file)}
-      </div>
+    <Card
+      elevation={0}
+      sx={{
+        borderBottom: 1,
+        borderColor: 'divider',
+        borderRadius: 0,
+        bgcolor: 'background.default',
+        '&:last-child': { borderBottom: 'none' },
+      }}
+    >
+      {/* Directories: entire row is clickable via CardActionArea */}
+      {file.is_dir ? (
+        <CardActionArea
+          onClick={handleRowClick}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 1.25,
+            justifyContent: 'flex-start',
+          }}
+        >
+          {iconBox}
+          {nameBox}
+        </CardActionArea>
+      ) : (
+        /* Files: plain row with icon, name, and action buttons */
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 1.25,
+          }}
+        >
+          {iconBox}
+          {nameBox}
 
-      <div class="file-info">
-        <span class="file-name" title={file.name}>{file.name}</span>
-        <span class="file-meta">{meta}</span>
-      </div>
-
-      {!file.is_dir && (
-        <div class="file-actions" onClick={(e) => e.stopPropagation()}>
-          {isPreviewable(file.name) && (
-            <button class="action-btn" title="Preview" onClick={() => onPreview(file)}>
-              <EyeIcon size={16} />
-            </button>
-          )}
-          <a class="action-btn" href={downloadUrl} download={file.name} title="Download" onClick={(e) => e.stopPropagation()}>
-            <DownloadIcon size={16} />
-          </a>
-          <button class="action-btn" title="Copy link" onClick={handleCopy}>
-            <CopyIcon size={16} />
-          </button>
-          <button class="action-btn" title="QR code link" onClick={() => onQr(file)}>
-            <QrIcon size={16} />
-          </button>
-        </div>
+          {/* Action buttons */}
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}
+          >
+            {isPreviewable(file.name) && (
+              <Tooltip title="Preview">
+                <IconButton size="small" onClick={() => onPreview(file)}>
+                  <EyeIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Download">
+              <MuiLink
+                href={downloadUrl}
+                download={file.name}
+                sx={{ display: 'flex', color: 'text.secondary' }}
+              >
+                <IconButton size="small" component="span">
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </MuiLink>
+            </Tooltip>
+            <Tooltip title="Copy link">
+              <IconButton size="small" onClick={handleCopy}>
+                <CopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="QR code">
+              <IconButton size="small" onClick={() => onQr(file)}>
+                <QrIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Card>
   );
 }
+

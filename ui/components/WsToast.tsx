@@ -1,5 +1,9 @@
-import { useEffect, useRef } from 'preact/hooks';
-import { CopyIcon, CloseIcon } from '../icons';
+import { useEffect, useRef } from 'react';
+import { Snackbar, Alert, IconButton, Box } from '@mui/material';
+import {
+  Close as CloseIcon,
+  ContentCopy as CopyIcon,
+} from '@mui/icons-material';
 import { copyToClipboard } from '../api';
 
 interface Props {
@@ -7,6 +11,7 @@ interface Props {
   onClose: () => void;
 }
 
+/** Toast notification for WebSocket broadcast messages. */
 export function WsToast({ message, onClose }: Props) {
   const copyBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -14,7 +19,7 @@ export function WsToast({ message, onClose }: Props) {
   useEffect(() => {
     const t = setTimeout(onClose, 8000);
     return () => clearTimeout(t);
-  }, [message]);
+  }, [message, onClose]);
 
   // Auto-focus copy button when toast appears
   useEffect(() => {
@@ -22,24 +27,46 @@ export function WsToast({ message, onClose }: Props) {
   }, []);
 
   return (
-    <div class="ws-toast" role="alert">
-      <div class="ws-toast-body">
-        <span class="ws-toast-label">Server message</span>
-        <p class="ws-toast-text">{message}</p>
-      </div>
-      <div class="ws-toast-actions">
-        <button 
-          ref={copyBtnRef}
-          class="ws-toast-btn" 
-          onClick={() => copyToClipboard(message)} 
-          title="Copy to clipboard"
-        >
-          <CopyIcon size={15} />
-        </button>
-        <button class="ws-toast-btn" onClick={onClose} title="Dismiss">
-          <CloseIcon size={15} />
-        </button>
-      </div>
-    </div>
+    <Snackbar
+      open
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      sx={{ maxWidth: 420, width: 'calc(100vw - 32px)' }}
+    >
+      <Alert
+        severity="info"
+        variant="filled"
+        sx={{
+          width: '100%',
+          alignItems: 'center',
+          '& .MuiAlert-message': { flex: 1, minWidth: 0 },
+        }}
+        action={
+          <Box sx={{ display: 'flex', gap: 0.25 }}>
+            <IconButton
+              ref={copyBtnRef}
+              size="small"
+              color="inherit"
+              onClick={() => copyToClipboard(message)}
+              title="Copy to clipboard"
+            >
+              <CopyIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              color="inherit"
+              onClick={onClose}
+              title="Dismiss"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        }
+      >
+        <Box sx={{ fontSize: 13, wordBreak: 'break-word', lineHeight: 1.4 }}>
+          {message}
+        </Box>
+      </Alert>
+    </Snackbar>
   );
 }
+

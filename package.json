@@ -6,20 +6,29 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run icon",
-    "icon": "node ./public/icon.js",
+    "icon": "tsx ./public/icon.ts",
     "cargo:publish": "cargo publish --allow-dirty",
     "preview": "vite preview"
   },
   "dependencies": {
-    "qrcode": "^1.5.4",
-    "preact": "^10.29.1"
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/icons-material": "9.0.1",
+    "@mui/material": "9.0.1",
+    "pretty-bytes": "7.1.0",
+    "qrcode": "1.5.4",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tsx": "^4.22.3"
   },
   "devDependencies": {
-    "@types/qrcode": "^1.5.5",
-    "@preact/preset-vite": "^2.10.5",
-    "@types/node": "^25.9.1",
-    "typescript": "~6.0.2",
-    "vite": "^8.0.12",
-    "vite-plugin-singlefile": "^2.3.3"
+    "@types/node": "25.9.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "typescript": "6.0.3",
+    "vite": "8.0.14",
+    "vite-plugin-singlefile": "2.3.3"
   }
 }
