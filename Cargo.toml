@@ -26,13 +26,14 @@ tokio-util = { version = "0.7", features = ["io"] }
 find_port = "0.1"
 httpdate = "1"
 webdav-serde = "0.1"
+open = { version = "5", optional = true }
 
 [dev-dependencies]
 tokio-tungstenite = "0.29"
 
 [features]
 default = ["cli"]
-cli = ["dep:clap", "dep:qr2term"]
+cli = ["dep:clap", "dep:qr2term", "dep:open"]
 
 [[bin]]
 required-features = ["cli"]

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Container, Typography, CircularProgress, Button } from '@mui/material';
 import { useFileList } from './hooks/useFileList';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -10,10 +10,11 @@ import { QrModal } from './components/QrModal';
 import { SettingsModal } from './components/SettingsModal';
 import { WsToast } from './components/WsToast';
 import type { FileInfo } from './types';
+import { pathFromHash, setHashPath } from './hashRoute';
 
 /** Main application component. */
 export function App() {
-  const [currentPath, setCurrentPath] = useState('');
+  const [currentPath, setCurrentPath] = useState(pathFromHash);
   const [search, setSearch] = useState('');
   const [apiBase, setApiBase] = useState(
     () => localStorage.getItem('fsv_api_base') ?? '/',
@@ -38,6 +39,31 @@ export function App() {
 
   const getQrUrl = (file: FileInfo) => fileUrl(apiBase, file.path);
 
+  // Navigate to a path and update the URL hash
+  const navigateTo = useCallback((path: string) => {
+    setCurrentPath(path);
+    setSearch('');
+    setHashPath(path);
+  }, []);
+
+  // Listen to browser back/forward (hashchange)
+  useEffect(() => {
+    const handler = () => {
+      setCurrentPath(pathFromHash());
+      setSearch('');
+    };
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
+  // Normalize the URL hash on first load (decode percent-encoded paths)
+  useEffect(() => {
+    const decoded = pathFromHash();
+    if (decoded) {
+      setHashPath(decoded);
+    }
+  }, []);
+
   return (
     <Container
       disableGutters
@@ -59,8 +85,7 @@ export function App() {
         wsStatus={wsStatus}
         onSearchChange={setSearch}
         onNavigate={(path) => {
-          setCurrentPath(path);
-          setSearch('');
+          navigateTo(path);
         }}
         onRefresh={refresh}
         onOpenSettings={() => setShowSettings(true)}
@@ -148,8 +173,7 @@ export function App() {
               file={file}
               apiBase={apiBase}
               onNavigate={(f) => {
-                setCurrentPath(f.path);
-                setSearch('');
+                navigateTo(f.path);
               }}
               onPreview={setPreviewFile}
               onQr={setQrFile}

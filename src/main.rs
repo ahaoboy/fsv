@@ -24,6 +24,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
+    let serving_path = args.path.display().to_string();
+
     let (ips, port, mut handle) = fsv::run(fsv::Config {
         path: args.path,
         port: args.port,
@@ -31,14 +33,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
 
     // Print all access URLs.
-    println!("fsv running on port {port}");
+    println!();
+    println!("╭─────────────────────────────────────╮");
+    println!("│  📁  fsv — File Share Viewer       │");
+    println!("╰─────────────────────────────────────╯");
+    println!();
+    println!("  Serving: {}", serving_path);
+    println!("  Port:    {}", port);
+    println!();
     for ip in &ips {
-        if ip.is_ipv6() {
-            println!("  http://[{ip}]:{port}");
+        let url = if ip.is_ipv6() {
+            format!("http://[{ip}]:{port}")
         } else {
-            println!("  http://{ip}:{port}");
-        }
+            format!("http://{ip}:{port}")
+        };
+        println!("  → {url}");
     }
+    println!();
 
     // Display a QR code for the first non-loopback IPv4 address (or loopback).
     let primary = ips
@@ -50,17 +61,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ip) = primary {
         let url = format!("http://{}:{}", ip, port);
         qr2term::print_qr(&url).unwrap_or_else(|e| eprintln!("QR error: {e}"));
+        // Automatically open the URL in the default browser
+        if let Err(e) = open::that(&url) {
+            eprintln!("Failed to open browser: {e}");
+        }
     }
 
     // Interactive prompt: each line is broadcast to all WebSocket clients.
     // Press Ctrl-C to exit and shut down the server.
+    println!("╭─────────────────────────────────────╮");
+    println!("│  💬  Type a message and press Enter │");
+    println!("│      to broadcast to all clients.   │");
+    println!("│      Press Ctrl+C to quit.          │");
+    println!("╰─────────────────────────────────────╯");
+    println!();
+
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
 
     loop {
         {
             let mut out = stdout.lock();
-            out.write_all(b"> ").ok();
+            out.write_all("❯ ".as_bytes()).ok();
             out.flush().ok();
         }
 
@@ -76,11 +98,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         match handle.send(text) {
-            Ok(n) => println!("sent to {n} client(s)"),
-            Err(e) => eprintln!("broadcast error: {e}"),
+            Ok(n) => println!("  ✓ broadcast to {n} client(s)"),
+            Err(e) => eprintln!("  ✗ broadcast error: {e}"),
         }
     }
 
+    println!();
     handle.shutdown().ok();
+    println!("  ✓ server shut down");
     Ok(())
 }

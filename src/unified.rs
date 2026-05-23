@@ -1,6 +1,6 @@
 use axum::{
     extract::{Request, State},
-    http::Method,
+    http::{header, Method, StatusCode},
     response::{IntoResponse, Response},
 };
 use percent_encoding::percent_decode_str;
@@ -8,6 +8,7 @@ use percent_encoding::percent_decode_str;
 use crate::error::FsvError;
 use crate::handlers;
 use crate::types::AppState;
+use crate::util::resolve_safe_path;
 use crate::webdav;
 
 /// Unified handler that routes based on HTTP method:
@@ -46,7 +47,7 @@ pub async fn unified_handler(
     }
 }
 
-/// Handle GET requests - serve HTML or files
+/// Handle GET requests - serve HTML, redirect directories, or serve files
 async fn handle_get(
     State(state): State<AppState>,
     path: &str,
@@ -57,24 +58,31 @@ async fn handle_get(
         return Ok(handlers::index().await.into_response());
     }
 
+    let rel_path = path.trim_start_matches('/');
+    let rel_path_opt = if rel_path.is_empty() { None } else { Some(rel_path) };
+
+    // If the path maps to a directory, redirect to the SPA with a hash fragment
+    if let Ok(target) = resolve_safe_path(&state.root_path, rel_path_opt)
+        && target.is_dir() {
+            // Use the original percent-encoded path from the URI for the redirect
+            let raw_path = request.uri().path().trim_start_matches('/');
+            return Ok(Response::builder()
+                .status(StatusCode::MOVED_PERMANENTLY)
+                .header(header::LOCATION, format!("/#/{}", raw_path))
+                .body(axum::body::Body::empty())
+                .unwrap());
+        }
+
     // Check for Range header
     let range_header = request
         .headers()
-        .get(axum::http::header::RANGE)
+        .get(header::RANGE)
         .and_then(|v| v.to_str().ok());
 
-    // All other paths: serve as files
-    let rel_path = path.trim_start_matches('/');
-    let rel_path = if rel_path.is_empty() {
-        None
-    } else {
-        Some(rel_path)
-    };
-
     if let Some(range) = range_header {
-        webdav::webdav_get_range(&state, rel_path, range).await
+        webdav::webdav_get_range(&state, rel_path_opt, range).await
     } else {
-        webdav::webdav_get(&state, rel_path).await
+        webdav::webdav_get(&state, rel_path_opt).await
     }
 }
 
