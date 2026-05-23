@@ -53,7 +53,7 @@ async fn handle_get(
     path: &str,
     request: Request,
 ) -> Result<Response, FsvError> {
-    // Root path returns the HTML UI
+    // Root path always returns the HTML UI
     if path == "/" {
         return Ok(handlers::index().await.into_response());
     }

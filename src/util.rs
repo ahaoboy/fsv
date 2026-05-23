@@ -31,7 +31,7 @@ pub fn get_local_ips() -> Vec<IpAddr> {
 }
 
 /// Resolves a relative path safely under `root_path`, blocking directory traversal.
-/// 
+///
 /// This function is designed to work reliably on Android devices where:
 /// - Symlinks are common (e.g., /sdcard -> /storage/emulated/0)
 /// - Permission issues may prevent canonicalization
@@ -58,10 +58,23 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
 
     // Strip leading slashes to prevent absolute path injection
     let rel_cleaned = rel.trim_start_matches(['/', '\\']);
-    
+
     // Prevent directory traversal by checking for ".." components
     if rel_cleaned.split(['/', '\\']).any(|part| part == "..") {
         return Err(FsvError::AccessDenied);
+    }
+
+    // When the root itself is a file, the only valid relative path is the
+    // file's own name (e.g. `fsv ./foo.txt` → GET /foo.txt → serve the file).
+    if canonical_root.is_file() {
+        let root_name = canonical_root
+            .file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_default();
+        if rel_cleaned == root_name {
+            return Ok(canonical_root);
+        }
+        return Err(FsvError::NotFound);
     }
 
     let joined = canonical_root.join(rel_cleaned);
@@ -74,14 +87,14 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
             // - Symlinks in the path
             // - Permission restrictions
             // - Non-existent intermediate directories
-            
+
             // Check if the path exists without canonicalizing
             if joined.exists() {
                 // Use the joined path directly, but verify it's under root
                 // by checking string prefix (less secure but works on Android)
                 let joined_str = joined.to_string_lossy();
                 let root_str = canonical_root.to_string_lossy();
-                
+
                 if joined_str.starts_with(root_str.as_ref()) {
                     joined
                 } else {
@@ -101,7 +114,7 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
         // Fallback check for Android where symlinks might cause issues
         let target_str = canonical_target.to_string_lossy();
         let root_str = canonical_root.to_string_lossy();
-        
+
         if target_str.starts_with(root_str.as_ref()) {
             Ok(canonical_target)
         } else {
@@ -125,6 +138,14 @@ pub fn get_file_info(canonical_root: &Path, target_path: &Path) -> Result<FileIn
         .unwrap_or(Path::new(""))
         .to_string_lossy()
         .replace('\\', "/");
+
+    // When sharing a single file, root and target are the same path,
+    // so strip_prefix yields "". Use the filename as the URL path instead.
+    let path = if path.is_empty() && target_path == canonical_root {
+        name.clone()
+    } else {
+        path
+    };
 
     let modified = metadata
         .modified()

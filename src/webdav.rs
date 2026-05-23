@@ -19,7 +19,7 @@ pub async fn webdav_handler(
     request: Request,
 ) -> Result<Response, FsvError> {
     let path = request.uri().path();
-    
+
     // No need to strip prefix - unified routing handles all paths
     let rel_path = path.trim_start_matches('/');
     let rel_path = if rel_path.is_empty() {
@@ -27,6 +27,18 @@ pub async fn webdav_handler(
     } else {
         Some(rel_path)
     };
+
+    // When sharing a single file, normalize empty paths to the file's name
+    // so PROPFIND and GET use /{filename} instead of /
+    let rel_path = match rel_path {
+        None if state.root_path.is_file() => state
+            .root_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .map(|n| n.to_string()),
+        other => other.map(|s| s.to_string()),
+    };
+    let rel_path = rel_path.as_deref();
 
     match method {
         Method::OPTIONS => Ok(webdav_options()),
@@ -45,7 +57,7 @@ fn webdav_options() -> Response {
     headers.insert(header::ALLOW, "OPTIONS, PROPFIND, GET, HEAD".parse().unwrap());
     headers.insert("DAV", "1, 2".parse().unwrap());
     headers.insert("MS-Author-Via", "DAV".parse().unwrap());
-    
+
     (StatusCode::OK, headers).into_response()
 }
 
@@ -55,7 +67,7 @@ async fn webdav_propfind(
     rel_path: Option<&str>,
 ) -> Result<Response, FsvError> {
     let target = resolve_safe_path(&state.root_path, rel_path)?;
-    
+
     let xml = if target.is_dir() {
         propfind_directory(&target, rel_path.unwrap_or("")).await?
     } else {
@@ -64,14 +76,14 @@ async fn webdav_propfind(
 
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, "application/xml; charset=utf-8".parse().unwrap());
-    
+
     Ok((StatusCode::MULTI_STATUS, headers, xml).into_response())
 }
 
 /// Generate PROPFIND XML for a directory
 async fn propfind_directory(dir: &Path, rel_path: &str) -> Result<String, FsvError> {
     let mut responses = vec![];
-    
+
     // Add the directory itself
     let dir_meta = tokio::fs::metadata(dir).await?;
     let dir_href = if rel_path.is_empty() {
@@ -79,7 +91,7 @@ async fn propfind_directory(dir: &Path, rel_path: &str) -> Result<String, FsvErr
     } else {
         format!("/{}/", rel_path.trim_start_matches('/'))
     };
-    
+
     responses.push(create_dav_response(
         &dir_href,
         "",
@@ -93,7 +105,7 @@ async fn propfind_directory(dir: &Path, rel_path: &str) -> Result<String, FsvErr
     while let Some(entry) = read_dir.next_entry().await? {
         let metadata = entry.metadata().await?;
         let name = entry.file_name().to_string_lossy().to_string();
-        
+
         let entry_path = if rel_path.is_empty() {
             name.clone()
         } else {
@@ -123,7 +135,7 @@ async fn propfind_directory(dir: &Path, rel_path: &str) -> Result<String, FsvErr
 async fn propfind_file(file: &Path, rel_path: &str) -> Result<String, FsvError> {
     let metadata = tokio::fs::metadata(file).await?;
     let name = file.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    
+
     let href = format!("/{}", rel_path.trim_start_matches('/'));
     let response = create_dav_response(
         &href,
@@ -154,7 +166,7 @@ fn create_dav_response(
     } else {
         None
     };
-    
+
     let modified_str = modified
         .map(httpdate::fmt_http_date);
 
@@ -198,7 +210,7 @@ pub async fn webdav_get(
 
     // Detect MIME type from extension
     let mime_type = get_mime_type(file_name);
-    
+
     // Generate ETag from modified time and size
     let etag = metadata
         .modified()
@@ -216,7 +228,7 @@ pub async fn webdav_get(
     headers.insert(header::ACCEPT_RANGES, "bytes".parse().unwrap());
     headers.insert(header::ETAG, etag.parse().unwrap());
     headers.insert(header::CACHE_CONTROL, "no-cache".parse().unwrap());
-    
+
     if let Ok(modified) = metadata.modified() {
         headers.insert(
             header::LAST_MODIFIED,
@@ -308,13 +320,13 @@ pub async fn webdav_get_range(
     use tokio::io::{AsyncReadExt, AsyncSeekExt};
     let mut file = file;
     file.seek(std::io::SeekFrom::Start(start)).await?;
-    
+
     let mut buffer = vec![0u8; content_length as usize];
     file.read_exact(&mut buffer).await?;
 
     // Detect MIME type from extension
     let mime_type = get_mime_type(file_name);
-    
+
     // Generate ETag from modified time and size
     let etag = metadata
         .modified()
@@ -332,7 +344,7 @@ pub async fn webdav_get_range(
     headers.insert(header::ACCEPT_RANGES, "bytes".parse().unwrap());
     headers.insert(header::ETAG, etag.parse().unwrap());
     headers.insert(header::CACHE_CONTROL, "no-cache".parse().unwrap());
-    
+
     if let Ok(modified) = metadata.modified() {
         headers.insert(
             header::LAST_MODIFIED,
@@ -345,7 +357,7 @@ pub async fn webdav_get_range(
         header::CONTENT_RANGE,
         format!("bytes {}-{}/{}", start, end, file_len).parse().unwrap(),
     );
-    
+
     headers.insert(
         header::CONTENT_LENGTH,
         content_length.to_string().parse().unwrap(),
@@ -358,7 +370,7 @@ pub async fn webdav_get_range(
 /// Supports formats: "0-1023", "1024-", "-1024"
 fn parse_range(range_str: &str, file_len: u64) -> Result<(u64, u64), FsvError> {
     let parts: Vec<&str> = range_str.split('-').collect();
-    
+
     if parts.len() != 2 {
         return Err(FsvError::InvalidRange);
     }
@@ -432,13 +444,13 @@ mod tests {
     fn test_parse_range() {
         // Full range
         assert_eq!(parse_range("0-1023", 10000).unwrap(), (0, 1023));
-        
+
         // Open-ended range
         assert_eq!(parse_range("1024-", 10000).unwrap(), (1024, 9999));
-        
+
         // Suffix range
         assert_eq!(parse_range("-1024", 10000).unwrap(), (8976, 9999));
-        
+
         // Invalid ranges
         assert!(parse_range("10000-", 10000).is_err());
         assert!(parse_range("100-50", 10000).is_err());
