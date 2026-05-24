@@ -26,15 +26,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let serving_path = args.path.display().to_string();
 
-    let (ips, port, mut handle) = fsv::run(fsv::Config {
+    let mut info = fsv::run(fsv::Config {
         path: args.path,
         port: args.port,
     })
     .await?;
+    let ips = &info.ips;
+    let port = info.port;
 
     // Print all access URLs.
     println!("fsv {}", serving_path);
-    for ip in &ips {
+    for ip in ips {
         let url = if ip.is_ipv6() {
             format!("http://[{ip}]:{port}")
         } else {
@@ -84,14 +86,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        match handle.send(text) {
+        match info.send(text) {
             Ok(n) => println!("  ✓ broadcast to {n} client(s)"),
             Err(e) => eprintln!("  ✗ broadcast error: {e}"),
         }
     }
 
     println!();
-    handle.shutdown().ok();
+    info.shutdown().ok();
     println!("  ✓ server shut down");
     Ok(())
 }

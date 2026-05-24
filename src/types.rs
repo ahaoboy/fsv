@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::net::IpAddr;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
 use tokio::sync::{broadcast, oneshot};
@@ -11,13 +12,15 @@ pub struct Config {
     pub port: u16,
 }
 
-/// A handle to control the running server after startup.
-pub struct ServerHandle {
+/// Information about the running server, returned by `run`.
+pub struct Server {
+    pub ips: Vec<IpAddr>,
+    pub port: u16,
     pub(crate) shutdown_tx: Option<oneshot::Sender<()>>,
     pub(crate) ws_tx: broadcast::Sender<String>,
 }
 
-impl ServerHandle {
+impl Server {
     /// Gracefully shuts down the server.
     pub fn shutdown(&mut self) -> Result<(), FsvError> {
         self.shutdown_tx

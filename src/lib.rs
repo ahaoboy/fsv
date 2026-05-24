@@ -9,4 +9,4 @@ mod ws;
 
 pub use error::FsvError;
 pub use server::run;
-pub use types::{Config, FileInfo, FileParams, ServerHandle};
+pub use types::{Config, FileInfo, FileParams, Server};

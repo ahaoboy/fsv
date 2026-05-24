@@ -1,17 +1,16 @@
-use std::net::IpAddr;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tokio::sync::{broadcast, oneshot};
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::error::FsvError;
-use crate::types::{AppState, Config, ServerHandle};
+use crate::types::{AppState, Config, Server};
 use crate::unified::unified_handler;
 use crate::util::get_local_ips;
 use crate::ws::ws_handler;
 
-/// Starts the fsv HTTP server and returns the bound addresses, port, and a control handle.
-pub async fn run(config: Config) -> Result<(Vec<IpAddr>, u16, ServerHandle), FsvError> {
+/// Starts the fsv HTTP server and returns server info including a control handle.
+pub async fn run(config: Config) -> Result<Server, FsvError> {
     let port = find_port::find_port("127.0.0.1", config.port).expect("can't find available port");
 
     let listener =
@@ -56,12 +55,10 @@ pub async fn run(config: Config) -> Result<(Vec<IpAddr>, u16, ServerHandle), Fsv
             .unwrap();
     });
 
-    Ok((
-        get_local_ips(),
+    Ok(Server {
+        ips: get_local_ips(),
         port,
-        ServerHandle {
-            shutdown_tx: Some(shutdown_tx),
-            ws_tx,
-        },
-    ))
+        shutdown_tx: Some(shutdown_tx),
+        ws_tx,
+    })
 }
