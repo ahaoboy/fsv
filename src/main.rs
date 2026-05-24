@@ -33,23 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
 
     // Print all access URLs.
-    println!();
-    println!("╭─────────────────────────────────────╮");
-    println!("│  📁  fsv — File Share Viewer       │");
-    println!("╰─────────────────────────────────────╯");
-    println!();
-    println!("  Serving: {}", serving_path);
-    println!("  Port:    {}", port);
-    println!();
+    println!("fsv {}", serving_path);
     for ip in &ips {
         let url = if ip.is_ipv6() {
             format!("http://[{ip}]:{port}")
         } else {
             format!("http://{ip}:{port}")
         };
-        println!("  → {url}");
+        println!("  {url}");
     }
-    println!();
 
     // Display a QR code for the first non-loopback IPv4 address (or loopback).
     let primary = ips
@@ -69,12 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Interactive prompt: each line is broadcast to all WebSocket clients.
     // Press Ctrl-C to exit and shut down the server.
-    println!("╭─────────────────────────────────────╮");
-    println!("│  💬  Type a message and press Enter │");
-    println!("│      to broadcast to all clients.   │");
-    println!("│      Press Ctrl+C to quit.          │");
-    println!("╰─────────────────────────────────────╯");
-    println!();
+    println!("Enter to broadcast, Ctrl+C to quit");
 
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
