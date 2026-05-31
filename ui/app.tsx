@@ -37,7 +37,14 @@ export function App() {
     [files, search],
   );
 
-  const getQrUrl = (file: FileInfo) => fileUrl(apiBase, file.path);
+  const getQrUrl = (file: FileInfo) => {
+    const url = fileUrl(apiBase, file.path);
+    // If apiBase is relative (starts with /), prepend the origin to make a full URL
+    if (url.startsWith('/')) {
+      return window.location.origin + url;
+    }
+    return url;
+  };
 
   // Navigate to a path and update the URL hash
   const navigateTo = useCallback((path: string) => {
