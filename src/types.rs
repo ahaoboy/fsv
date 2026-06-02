@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
-use tokio::sync::{broadcast, oneshot};
+use std::sync::Arc;
+use tokio::sync::{broadcast, oneshot, Notify};
 
 use crate::error::FsvError;
 
@@ -18,6 +19,7 @@ pub struct Server {
     pub port: u16,
     pub(crate) shutdown_tx: Option<oneshot::Sender<()>>,
     pub(crate) ws_tx: broadcast::Sender<String>,
+    pub shutdown_notify: Arc<Notify>,
 }
 
 impl Server {
@@ -48,7 +50,8 @@ impl Server {
 pub struct AppState {
     pub root_path: PathBuf,
     pub ws_tx: broadcast::Sender<String>,
-    pub ws_connections: std::sync::Arc<AtomicUsize>,
+    pub ws_connections: Arc<AtomicUsize>,
+    pub shutdown_notify: Arc<Notify>,
 }
 
 /// Metadata for a single file or directory entry.

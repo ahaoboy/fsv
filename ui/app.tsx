@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Container, Typography, CircularProgress, Button } from '@mui/material';
 import { useFileList } from './hooks/useFileList';
 import { useWebSocket } from './hooks/useWebSocket';
-import { copyToClipboard, fileUrl } from './api';
+import { copyToClipboard, fileUrl, shutdownServer } from './api';
 import { Header } from './components/Header';
 import { FileCard } from './components/FileCard';
 import { PreviewModal } from './components/PreviewModal';
@@ -24,6 +24,7 @@ export function App() {
   const [qrFile, setQrFile] = useState<FileInfo | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [wsToast, setWsToast] = useState<string | null>(null);
+  const [shuttingDown, setShuttingDown] = useState(false);
 
   const { files, loading, error, refresh } = useFileList(currentPath, apiBase);
 
@@ -63,6 +64,16 @@ export function App() {
     return () => window.removeEventListener('hashchange', handler);
   }, []);
 
+  // Shutdown the server
+  const handleShutdown = useCallback(async () => {
+    setShuttingDown(true);
+    try {
+      await shutdownServer(apiBase);
+    } catch {
+      // Server may close the connection before responding; that's expected.
+    }
+  }, [apiBase]);
+
   // Normalize the URL hash on first load (decode percent-encoded paths)
   useEffect(() => {
     const decoded = pathFromHash();
@@ -96,6 +107,8 @@ export function App() {
         }}
         onRefresh={refresh}
         onOpenSettings={() => setShowSettings(true)}
+        onShutdown={handleShutdown}
+        shuttingDown={shuttingDown}
       />
 
       {/* ── File List ── */}

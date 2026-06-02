@@ -119,6 +119,10 @@ async fn handle_post(
             .await
             .into_response()),
 
+        "/shutdown" => Ok(handlers::shutdown(State(state))
+            .await
+            .into_response()),
+
         _ => Ok(axum::response::Response::builder()
             .status(404)
             .body("API endpoint not found".into())

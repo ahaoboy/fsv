@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::io::{BufRead, Write};
 use std::path::PathBuf;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 /// fsv: share a file or folder over HTTP with a live WebSocket broadcast channel.
 #[derive(Parser, Debug)]
@@ -62,38 +62,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Interactive prompt: each line is broadcast to all WebSocket clients.
-    // Press Ctrl-C to exit and shut down the server.
+    // Press Ctrl-C to exit, or use the web UI shutdown button.
     println!("Enter to broadcast, Ctrl+C to quit");
 
-    let stdin = std::io::stdin();
-    let stdout = std::io::stdout();
+    let stdin = BufReader::new(tokio::io::stdin());
+    let mut lines = stdin.lines();
+    let mut stdout = tokio::io::stdout();
+    let shutdown_notify = info.shutdown_notify.clone();
+    let mut api_shutdown = false;
 
     loop {
-        {
-            let mut out = stdout.lock();
-            out.write_all("❯ ".as_bytes()).ok();
-            out.flush().ok();
-        }
+        // Print prompt
+        stdout.write_all(b"\xe2\x9d\xaf ").await.ok();
+        stdout.flush().await.ok();
 
-        let mut line = String::new();
-        match stdin.lock().read_line(&mut line) {
-            Ok(0) | Err(_) => break, // EOF (Ctrl-D on Unix) or error
-            Ok(_) => {}
-        }
-
-        let text = line.trim();
-        if text.is_empty() {
-            continue;
-        }
-
-        match info.send(text) {
-            Ok(n) => println!("  ✓ broadcast to {n} client(s)"),
-            Err(e) => eprintln!("  ✗ broadcast error: {e}"),
+        tokio::select! {
+            result = lines.next_line() => {
+                match result {
+                    Ok(Some(line)) => {
+                        let text = line.trim();
+                        if text.is_empty() {
+                            continue;
+                        }
+                        match info.send(text) {
+                            Ok(n) => println!("  \u{2713} broadcast to {n} client(s)"),
+                            Err(e) => eprintln!("  \u{2717} broadcast error: {e}"),
+                        }
+                    }
+                    _ => break, // EOF or error
+                }
+            }
+            _ = shutdown_notify.notified() => {
+                api_shutdown = true;
+                break;
+            }
         }
     }
 
     println!();
-    info.shutdown().ok();
-    println!("  ✓ server shut down");
+    if !api_shutdown {
+        info.shutdown().ok();
+    }
+    println!("  \u{2713} server shut down");
+
+    if api_shutdown {
+        // API-triggered shutdown: force exit to avoid waiting on background tasks.
+        std::process::exit(0);
+    }
     Ok(())
 }

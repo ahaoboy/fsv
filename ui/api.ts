@@ -73,3 +73,10 @@ export async function checkHealth(apiBase: string): Promise<HealthStatus> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<HealthStatus>;
 }
+
+/** Shutdown the server. */
+export async function shutdownServer(apiBase: string): Promise<void> {
+  const url = `${base(apiBase)}/shutdown`;
+  const res = await fetch(url, { method: 'POST' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}

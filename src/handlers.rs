@@ -117,3 +117,20 @@ pub async fn health() -> Json<serde_json::Value> {
             .as_secs(),
     }))
 }
+
+/// Shuts down the server gracefully.
+pub async fn shutdown(State(state): State<AppState>) -> Json<serde_json::Value> {
+    // Delay shutdown so the HTTP response can be flushed to the client first.
+    let notify = state.shutdown_notify.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        notify.notify_waiters();
+    });
+    Json(serde_json::json!({
+        "message": "Shutting down...",
+        "timestamp": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    }))
+}

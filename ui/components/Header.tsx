@@ -15,6 +15,7 @@ import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
+  PowerSettingsNew as PowerIcon,
   GitHub as GitHubIcon,
 } from '@mui/icons-material';
 import type { WsStatus } from '../types';
@@ -47,10 +48,12 @@ interface HeaderProps {
   currentPath: string;
   search: string;
   wsStatus: WsStatus;
+  shuttingDown: boolean;
   onSearchChange: (value: string) => void;
   onNavigate: (path: string) => void;
   onRefresh: () => void;
   onOpenSettings: () => void;
+  onShutdown: () => void;
 }
 
 /** App header with brand, breadcrumbs, search bar, and controls. */
@@ -58,10 +61,12 @@ export function Header({
   currentPath,
   search,
   wsStatus,
+  shuttingDown,
   onSearchChange,
   onNavigate,
   onRefresh,
   onOpenSettings,
+  onShutdown,
 }: HeaderProps) {
   const crumbs = getBreadcrumbs(currentPath);
 
@@ -109,23 +114,35 @@ export function Header({
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* WebSocket status dot */}
-            <Tooltip title={`WebSocket: ${wsStatus}`}>
+            <Tooltip title={shuttingDown ? 'Server shutting down' : `WebSocket: ${wsStatus}`}>
               <Box
                 sx={{
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  bgcolor: wsDotColor[wsStatus],
-                  boxShadow: wsStatus !== 'disconnected'
+                  bgcolor: shuttingDown ? wsDotColor.disconnected : wsDotColor[wsStatus],
+                  boxShadow: !shuttingDown && wsStatus !== 'disconnected'
                     ? `0 0 6px ${wsDotColor[wsStatus]}`
                     : undefined,
-                  animation: wsStatus === 'connecting' ? 'pulse 1.4s infinite' : undefined,
+                  animation: !shuttingDown && wsStatus === 'connecting' ? 'pulse 1.4s infinite' : undefined,
                   '@keyframes pulse': {
                     '0%, 100%': { opacity: 1 },
                     '50%': { opacity: 0.4 },
                   },
                 }}
               />
+            </Tooltip>
+            <Tooltip title={shuttingDown ? 'Shutting down…' : 'Shutdown server'}>
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={onShutdown}
+                  disabled={shuttingDown}
+                  sx={{ color: 'error.main' }}
+                >
+                  <PowerIcon fontSize="small" />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Settings">
               <IconButton size="small" onClick={onOpenSettings}>
