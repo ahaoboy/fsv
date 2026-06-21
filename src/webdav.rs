@@ -7,7 +7,6 @@ use axum::{
 use percent_encoding::percent_decode_str;
 use std::path::Path;
 use tokio_util::io::ReaderStream;
-use tracing;
 use webdav_serde::{Multistatus, Response as DavResponse, PropStat, Prop, ResourceType, Collection};
 
 use crate::error::FsvError;

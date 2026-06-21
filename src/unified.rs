@@ -4,7 +4,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use percent_encoding::percent_decode_str;
-use tracing;
 
 use crate::error::FsvError;
 use crate::handlers;

@@ -1,6 +1,5 @@
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
-use tracing;
 
 use crate::error::FsvError;
 use crate::types::FileInfo;

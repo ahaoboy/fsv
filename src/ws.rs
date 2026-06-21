@@ -6,7 +6,6 @@ use axum::{
     response::IntoResponse,
 };
 use futures_util::{SinkExt, StreamExt};
-use tracing;
 
 use crate::types::AppState;
 
@@ -19,7 +18,9 @@ pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> 
 /// Manages a single WebSocket client: forwards server broadcasts and handles disconnects.
 async fn handle_socket(socket: WebSocket, state: AppState) {
     // Increment connection count
-    let prev = state.ws_connections.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let prev = state
+        .ws_connections
+        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     tracing::info!(connections = prev + 1, "WebSocket client connected");
 
     let (mut sender, mut receiver) = socket.split();
@@ -65,6 +66,8 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     }
 
     // Decrement connection count
-    let prev = state.ws_connections.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+    let prev = state
+        .ws_connections
+        .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
     tracing::info!(connections = prev - 1, "WebSocket client disconnected");
 }

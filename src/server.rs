@@ -1,8 +1,7 @@
-use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use tokio::sync::{broadcast, oneshot, Notify};
+use std::sync::atomic::AtomicUsize;
+use tokio::sync::{Notify, broadcast, oneshot};
 use tower_http::cors::{Any, CorsLayer};
-use tracing;
 
 use crate::error::FsvError;
 use crate::types::{AppState, Config, Server};
@@ -17,8 +16,7 @@ pub async fn run(config: Config) -> Result<Server, FsvError> {
     tracing::info!(port, "binding TCP listener");
 
     let listener =
-        tokio::net::TcpListener::bind(std::net::SocketAddr::from(([0, 0, 0, 0], port)))
-            .await?;
+        tokio::net::TcpListener::bind(std::net::SocketAddr::from(([0, 0, 0, 0], port))).await?;
 
     tracing::info!(port, "listener bound, server ready");
 
