@@ -12,7 +12,7 @@ include = ["/src/**/*", "/dist/**/*", "/Cargo.toml", "/build.rs", "/README.md"]
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.8", features = ["ws"] }
-tower-http = { version = "0.6", features = ["cors"] }
+tower-http = { version = "0.7", features = ["cors"] }
 clap = { version = "4", features = ["derive"], optional = true }
 qr2term = { version = "0.3", optional = true }
 thiserror = "2"
