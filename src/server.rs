@@ -2,6 +2,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use tokio::sync::{broadcast, oneshot, Notify};
 use tower_http::cors::{Any, CorsLayer};
+use tracing;
 
 use crate::error::FsvError;
 use crate::types::{AppState, Config, Server};
@@ -13,9 +14,13 @@ use crate::ws::ws_handler;
 pub async fn run(config: Config) -> Result<Server, FsvError> {
     let port = find_port::find_port("127.0.0.1", config.port).expect("can't find available port");
 
+    tracing::info!(port, "binding TCP listener");
+
     let listener =
         tokio::net::TcpListener::bind(std::net::SocketAddr::from(([0, 0, 0, 0], port)))
             .await?;
+
+    tracing::info!(port, "listener bound, server ready");
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     let (ws_tx, _) = broadcast::channel::<String>(100);
@@ -51,15 +56,21 @@ pub async fn run(config: Config) -> Result<Server, FsvError> {
     let shutdown_notify_for_server = shutdown_notify.clone();
 
     tokio::spawn(async move {
+        tracing::debug!("axum serve task started");
         axum::serve(listener, app)
             .with_graceful_shutdown(async move {
                 tokio::select! {
-                    _ = shutdown_rx => {},
-                    _ = shutdown_notify.notified() => {},
+                    _ = shutdown_rx => {
+                        tracing::info!("graceful shutdown triggered via shutdown_tx");
+                    },
+                    _ = shutdown_notify.notified() => {
+                        tracing::info!("graceful shutdown triggered via notify");
+                    },
                 }
             })
             .await
             .unwrap();
+        tracing::debug!("axum serve task finished");
     });
 
     Ok(Server {

@@ -27,6 +27,8 @@ find_port = "0.1"
 httpdate = "1"
 webdav-serde = "0.1"
 open = { version = "5", optional = true }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 tokio-tungstenite = "0.29"

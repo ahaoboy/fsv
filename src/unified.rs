@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use percent_encoding::percent_decode_str;
+use tracing;
 
 use crate::error::FsvError;
 use crate::handlers;
@@ -26,6 +27,8 @@ pub async fn unified_handler(
         .unwrap_or_default()
         .to_string();
 
+    tracing::debug!(method = %method, path = %path, "incoming request");
+
     match method {
         // WebDAV methods
         Method::OPTIONS => webdav::webdav_handler(State(state), method, request).await,
@@ -40,10 +43,13 @@ pub async fn unified_handler(
         // POST: API calls
         Method::POST => handle_post(State(state), &path, request).await,
 
-        _ => Ok(axum::response::Response::builder()
-            .status(405)
-            .body("Method not allowed".into())
-            .unwrap()),
+        other => {
+            tracing::warn!(method = %other, path = %path, "method not allowed");
+            Ok(axum::response::Response::builder()
+                .status(405)
+                .body("Method not allowed".into())
+                .unwrap())
+        }
     }
 }
 
@@ -66,6 +72,7 @@ async fn handle_get(
         && target.is_dir() {
             // Use the original percent-encoded path from the URI for the redirect
             let raw_path = request.uri().path().trim_start_matches('/');
+            tracing::debug!(target = %target.display(), "redirecting directory to SPA hash");
             return Ok(Response::builder()
                 .status(StatusCode::MOVED_PERMANENTLY)
                 .header(header::LOCATION, format!("/#/{}", raw_path))
@@ -80,6 +87,7 @@ async fn handle_get(
         .and_then(|v| v.to_str().ok());
 
     if let Some(range) = range_header {
+        tracing::debug!(range = %range, "range request");
         webdav::webdav_get_range(&state, rel_path_opt, range).await
     } else {
         webdav::webdav_get(&state, rel_path_opt).await
@@ -92,6 +100,8 @@ async fn handle_post(
     path: &str,
     request: Request,
 ) -> Result<Response, FsvError> {
+    tracing::debug!(path = %path, "API POST request");
+
     match path {
         "/list" => {
             let query = request.uri().query().unwrap_or("");
@@ -123,9 +133,12 @@ async fn handle_post(
             .await
             .into_response()),
 
-        _ => Ok(axum::response::Response::builder()
-            .status(404)
-            .body("API endpoint not found".into())
-            .unwrap()),
+        _ => {
+            tracing::warn!(path = %path, "unknown API endpoint");
+            Ok(axum::response::Response::builder()
+                .status(404)
+                .body("API endpoint not found".into())
+                .unwrap())
+        }
     }
 }

@@ -6,6 +6,7 @@ use axum::{
     response::IntoResponse,
 };
 use tokio_util::io::ReaderStream;
+use tracing;
 
 use crate::error::FsvError;
 use crate::types::{AppState, FileInfo, FileParams};
@@ -22,10 +23,13 @@ pub async fn list(
 
     // When the root itself is a file, return its info directly.
     if canonical_root.is_file() {
+        tracing::debug!(root = %canonical_root.display(), "listing single-file root");
         return Ok(Json(vec![get_file_info(&canonical_root, &canonical_root)?]));
     }
 
     let target = resolve_safe_path(&state.root_path, params.path.as_deref())?;
+
+    tracing::debug!(target = %target.display(), "listing directory");
 
     if target.is_file() {
         return Ok(Json(vec![get_file_info(&canonical_root, &target)?]));
@@ -45,6 +49,8 @@ pub async fn list(
             .cmp(&a.is_dir)
             .then_with(|| a.name.cmp(&b.name))
     });
+
+    tracing::debug!(count = entries.len(), "directory listing complete");
 
     Ok(Json(entries))
 }
@@ -75,6 +81,12 @@ pub async fn file(
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "download".into());
 
+    tracing::debug!(
+        path = %target.display(),
+        size = file_len,
+        "streaming file download"
+    );
+
     let mut headers = axum::http::HeaderMap::new();
     headers.insert(
         header::CONTENT_TYPE,
@@ -95,12 +107,14 @@ pub async fn file(
 
 /// Serves the bundled frontend SPA.
 pub async fn index() -> axum::response::Html<&'static str> {
+    tracing::debug!("serving SPA index.html");
     axum::response::Html(include_str!("../dist/index.html"))
 }
 
 /// Returns WebSocket connection statistics.
 pub async fn ws_info(State(state): State<AppState>) -> Json<serde_json::Value> {
     let count = state.ws_connections.load(std::sync::atomic::Ordering::Relaxed);
+    tracing::debug!(connected = count, "ws-info requested");
     Json(serde_json::json!({
         "connected": count,
         "broadcast_capacity": 100,
@@ -109,6 +123,7 @@ pub async fn ws_info(State(state): State<AppState>) -> Json<serde_json::Value> {
 
 /// Health check endpoint - returns server status and uptime.
 pub async fn health() -> Json<serde_json::Value> {
+    tracing::trace!("health check requested");
     Json(serde_json::json!({
         "status": "ok",
         "timestamp": std::time::SystemTime::now()
@@ -120,6 +135,7 @@ pub async fn health() -> Json<serde_json::Value> {
 
 /// Shuts down the server gracefully.
 pub async fn shutdown(State(state): State<AppState>) -> Json<serde_json::Value> {
+    tracing::info!("shutdown API called, scheduling graceful shutdown");
     // Delay shutdown so the HTTP response can be flushed to the client first.
     let notify = state.shutdown_notify.clone();
     tokio::spawn(async move {

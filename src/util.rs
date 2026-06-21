@@ -1,5 +1,6 @@
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
+use tracing;
 
 use crate::error::FsvError;
 use crate::types::FileInfo;
@@ -61,6 +62,11 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
 
     // Prevent directory traversal by checking for ".." components
     if rel_cleaned.split(['/', '\\']).any(|part| part == "..") {
+        tracing::warn!(
+            root = %canonical_root.display(),
+            relative = %rel,
+            "blocked directory traversal attempt"
+        );
         return Err(FsvError::AccessDenied);
     }
 
@@ -74,6 +80,11 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
         if rel_cleaned == root_name {
             return Ok(canonical_root);
         }
+        tracing::debug!(
+            root = %canonical_root.display(),
+            relative = %rel_cleaned,
+            "relative path does not match single-file root name"
+        );
         return Err(FsvError::NotFound);
     }
 
@@ -96,11 +107,24 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
                 let root_str = canonical_root.to_string_lossy();
 
                 if joined_str.starts_with(root_str.as_ref()) {
+                    tracing::debug!(
+                        path = %joined_str,
+                        "canonicalize failed, using joined path (Android fallback)"
+                    );
                     joined
                 } else {
+                    tracing::warn!(
+                        path = %joined_str,
+                        root = %root_str,
+                        "joined path is outside root (Android fallback)"
+                    );
                     return Err(FsvError::AccessDenied);
                 }
             } else {
+                tracing::debug!(
+                    path = %joined.display(),
+                    "path not found"
+                );
                 return Err(FsvError::NotFound);
             }
         }
@@ -118,6 +142,11 @@ pub fn resolve_safe_path(root_path: &Path, relative: Option<&str>) -> Result<Pat
         if target_str.starts_with(root_str.as_ref()) {
             Ok(canonical_target)
         } else {
+            tracing::warn!(
+                target = %target_str,
+                root = %root_str,
+                "resolved path is outside root — access denied"
+            );
             Err(FsvError::AccessDenied)
         }
     }

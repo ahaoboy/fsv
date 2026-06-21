@@ -4,8 +4,10 @@ use axum::{
     http::{header, HeaderMap, Method, StatusCode},
     response::{IntoResponse, Response},
 };
+use percent_encoding::percent_decode_str;
 use std::path::Path;
 use tokio_util::io::ReaderStream;
+use tracing;
 use webdav_serde::{Multistatus, Response as DavResponse, PropStat, Prop, ResourceType, Collection};
 
 use crate::error::FsvError;
@@ -18,7 +20,11 @@ pub async fn webdav_handler(
     method: Method,
     request: Request,
 ) -> Result<Response, FsvError> {
-    let path = request.uri().path();
+    // Decode URL-encoded path (e.g., %E6%B2%B3 → 河) before filesystem use.
+    let path = percent_decode_str(request.uri().path())
+        .decode_utf8()
+        .unwrap_or_default()
+        .to_string();
 
     // No need to strip prefix - unified routing handles all paths
     let rel_path = path.trim_start_matches('/');
@@ -41,12 +47,22 @@ pub async fn webdav_handler(
     let rel_path = rel_path.as_deref();
 
     match method {
-        Method::OPTIONS => Ok(webdav_options()),
+        Method::OPTIONS => {
+            tracing::debug!("WebDAV OPTIONS");
+            Ok(webdav_options())
+        }
         ref m if m.as_str() == "PROPFIND" => {
+            tracing::debug!(path = %request.uri().path(), "WebDAV PROPFIND");
             webdav_propfind(&state, rel_path).await
         }
-        Method::GET => webdav_get(&state, rel_path).await,
-        Method::HEAD => webdav_head(&state, rel_path).await,
+        Method::GET => {
+            tracing::debug!(path = %request.uri().path(), "WebDAV GET");
+            webdav_get(&state, rel_path).await
+        }
+        Method::HEAD => {
+            tracing::debug!(path = %request.uri().path(), "WebDAV HEAD");
+            webdav_head(&state, rel_path).await
+        }
         _ => Ok((StatusCode::METHOD_NOT_ALLOWED, "Method not allowed").into_response()),
     }
 }
