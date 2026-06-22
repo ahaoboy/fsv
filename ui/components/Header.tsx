@@ -10,15 +10,15 @@ import {
   TextField,
   InputAdornment,
   Tooltip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Search as SearchIcon,
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
   PowerSettingsNew as PowerIcon,
   GitHub as GitHubIcon,
-} from '@mui/icons-material';
-import type { WsStatus } from '../types';
+} from "@mui/icons-material";
+import type { WsStatus } from "../types";
 
 interface Breadcrumb {
   name: string;
@@ -27,9 +27,9 @@ interface Breadcrumb {
 
 /** Build breadcrumb segments from a path string. */
 export function getBreadcrumbs(path: string): Breadcrumb[] {
-  const segments = path.split('/').filter(Boolean);
-  const crumbs: Breadcrumb[] = [{ name: 'Root', path: '' }];
-  let acc = '';
+  const segments = path.split("/").filter(Boolean);
+  const crumbs: Breadcrumb[] = [{ name: "Root", path: "" }];
+  let acc = "";
   for (const seg of segments) {
     acc = acc ? `${acc}/${seg}` : seg;
     crumbs.push({ name: seg, path: acc });
@@ -39,9 +39,9 @@ export function getBreadcrumbs(path: string): Breadcrumb[] {
 
 /** Status dot colors mapped to MUI palette colors. */
 const wsDotColor: Record<WsStatus, string> = {
-  connected: '#22c55e',
-  connecting: '#eab308',
-  disconnected: '#6b7280',
+  connected: "#22c55e",
+  connecting: "#eab308",
+  disconnected: "#6b7280",
 };
 
 interface HeaderProps {
@@ -77,22 +77,22 @@ export function Header({
       elevation={0}
       sx={{
         borderBottom: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.default',
+        borderColor: "divider",
+        bgcolor: "background.default",
       }}
     >
-      <Toolbar sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, py: 1 }}>
+      <Toolbar sx={{ flexDirection: "column", alignItems: "stretch", gap: 1, py: 1 }}>
         {/* Top row: brand + controls */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip
               label="FSV"
               size="small"
               sx={{
                 fontWeight: 800,
                 fontSize: 11,
-                background: 'linear-gradient(135deg, #a855f7, #7c3aed)',
-                color: '#fff',
+                background: "linear-gradient(135deg, #a855f7, #7c3aed)",
+                color: "#fff",
                 borderRadius: 1.5,
               }}
             />
@@ -106,39 +106,41 @@ export function Header({
               target="_blank"
               rel="noopener noreferrer"
               title="View on GitHub"
-              sx={{ color: 'text.secondary', opacity: 0.6, '&:hover': { opacity: 1 } }}
+              sx={{ color: "text.secondary", opacity: 0.6, "&:hover": { opacity: 1 } }}
             >
               <GitHubIcon fontSize="small" />
             </IconButton>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {/* WebSocket status dot */}
-            <Tooltip title={shuttingDown ? 'Server shutting down' : `WebSocket: ${wsStatus}`}>
+            <Tooltip title={shuttingDown ? "Server shutting down" : `WebSocket: ${wsStatus}`}>
               <Box
                 sx={{
                   width: 8,
                   height: 8,
-                  borderRadius: '50%',
+                  borderRadius: "50%",
                   bgcolor: shuttingDown ? wsDotColor.disconnected : wsDotColor[wsStatus],
-                  boxShadow: !shuttingDown && wsStatus !== 'disconnected'
-                    ? `0 0 6px ${wsDotColor[wsStatus]}`
-                    : undefined,
-                  animation: !shuttingDown && wsStatus === 'connecting' ? 'pulse 1.4s infinite' : undefined,
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 1 },
-                    '50%': { opacity: 0.4 },
+                  boxShadow:
+                    !shuttingDown && wsStatus !== "disconnected"
+                      ? `0 0 6px ${wsDotColor[wsStatus]}`
+                      : undefined,
+                  animation:
+                    !shuttingDown && wsStatus === "connecting" ? "pulse 1.4s infinite" : undefined,
+                  "@keyframes pulse": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.4 },
                   },
                 }}
               />
             </Tooltip>
-            <Tooltip title={shuttingDown ? 'Shutting down…' : 'Shutdown server'}>
+            <Tooltip title={shuttingDown ? "Shutting down…" : "Shutdown server"}>
               <span>
                 <IconButton
                   size="small"
                   onClick={onShutdown}
                   disabled={shuttingDown}
-                  sx={{ color: 'error.main' }}
+                  sx={{ color: "error.main" }}
                 >
                   <PowerIcon fontSize="small" />
                 </IconButton>
@@ -156,7 +158,7 @@ export function Header({
         <Breadcrumbs
           aria-label="Path navigation"
           separator="/"
-          sx={{ '& .MuiBreadcrumbs-ol': { flexWrap: 'wrap' } }}
+          sx={{ "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" } }}
         >
           {crumbs.map((crumb, i) =>
             i === crumbs.length - 1 ? (
@@ -172,9 +174,9 @@ export function Header({
                 color="text.secondary"
                 onClick={() => {
                   onNavigate(crumb.path);
-                  onSearchChange('');
+                  onSearchChange("");
                 }}
-                sx={{ fontFamily: 'inherit' }}
+                sx={{ fontFamily: "inherit" }}
               >
                 {crumb.name}
               </Link>
@@ -183,7 +185,7 @@ export function Header({
         </Breadcrumbs>
 
         {/* Search + Refresh */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <TextField
             size="small"
             fullWidth
@@ -201,7 +203,7 @@ export function Header({
             }}
             aria-label="Filter files"
             sx={{
-              '& .MuiOutlinedInput-root': { borderRadius: 2 },
+              "& .MuiOutlinedInput-root": { borderRadius: 2 },
             }}
           />
           <Tooltip title="Refresh">

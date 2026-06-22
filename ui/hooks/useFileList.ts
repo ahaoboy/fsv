@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { listFiles } from '../api';
-import type { FileInfo } from '../types';
+import { useState, useEffect, useCallback } from "react";
+import { listFiles } from "../api";
+import type { FileInfo } from "../types";
 
 /** Hook to fetch and manage the file list for a given path. */
 export function useFileList(path: string, apiBase: string) {
@@ -15,7 +15,7 @@ export function useFileList(path: string, apiBase: string) {
       const result = await listFiles(base, p);
       setFiles(result);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to load files';
+      const message = e instanceof Error ? e.message : "Failed to load files";
       setError(message);
       setFiles([]);
     } finally {

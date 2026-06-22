@@ -8,7 +8,7 @@ export interface FileInfo {
 }
 
 /** WebSocket connection status. */
-export type WsStatus = 'connecting' | 'connected' | 'disconnected';
+export type WsStatus = "connecting" | "connected" | "disconnected";
 
 /** WebSocket broadcast message. */
 export interface WsMessage {

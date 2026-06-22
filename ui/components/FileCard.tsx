@@ -6,7 +6,7 @@ import {
   IconButton,
   Tooltip,
   Link as MuiLink,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
@@ -17,12 +17,12 @@ import {
   Visibility as EyeIcon,
   QrCode as QrIcon,
   ContentCopy as CopyIcon,
-} from '@mui/icons-material';
-import { fileUrl, copyToClipboard } from '../api';
-import type { FileInfo } from '../types';
-import { isPreviewable } from './PreviewModal';
-import { type JSX } from 'react';
-import prettyBytes from 'pretty-bytes';
+} from "@mui/icons-material";
+import { fileUrl, copyToClipboard } from "../api";
+import type { FileInfo } from "../types";
+import { isPreviewable } from "./PreviewModal";
+import { type JSX } from "react";
+import prettyBytes from "pretty-bytes";
 
 interface Props {
   file: FileInfo;
@@ -34,34 +34,53 @@ interface Props {
 
 /** File extensions grouped by type for icon selection. */
 const CODE_EXTS = new Set([
-  'rs', 'js', 'ts', 'tsx', 'jsx', 'html', 'htm', 'css', 'json',
-  'toml', 'yaml', 'yml', 'md', 'sh', 'py', 'go', 'c', 'cpp', 'h',
-  'java', 'rb', 'php', 'xml', 'lock',
+  "rs",
+  "js",
+  "ts",
+  "tsx",
+  "jsx",
+  "html",
+  "htm",
+  "css",
+  "json",
+  "toml",
+  "yaml",
+  "yml",
+  "md",
+  "sh",
+  "py",
+  "go",
+  "c",
+  "cpp",
+  "h",
+  "java",
+  "rb",
+  "php",
+  "xml",
+  "lock",
 ]);
-const IMAGE_EXTS = new Set([
-  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif',
-]);
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov']);
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "avif"]);
+const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "mov"]);
 
 /** Pick the appropriate icon for a file based on its extension. */
 function getIcon(file: FileInfo): JSX.Element {
   if (file.is_dir) {
-    return <FolderIcon sx={{ color: '#a855f7' }} fontSize="small" />;
+    return <FolderIcon sx={{ color: "#a855f7" }} fontSize="small" />;
   }
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (IMAGE_EXTS.has(ext)) return <ImageIcon sx={{ color: '#10b981' }} fontSize="small" />;
-  if (VIDEO_EXTS.has(ext)) return <VideoIcon sx={{ color: '#f59e0b' }} fontSize="small" />;
-  if (CODE_EXTS.has(ext)) return <CodeIcon sx={{ color: '#3b82f6' }} fontSize="small" />;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXTS.has(ext)) return <ImageIcon sx={{ color: "#10b981" }} fontSize="small" />;
+  if (VIDEO_EXTS.has(ext)) return <VideoIcon sx={{ color: "#f59e0b" }} fontSize="small" />;
+  if (CODE_EXTS.has(ext)) return <CodeIcon sx={{ color: "#3b82f6" }} fontSize="small" />;
   return <FileIcon color="action" fontSize="small" />;
 }
 
 /** Format a Unix timestamp into a fixed-width date string (YYYY-MM-DD). */
 function formatDate(epoch: number | null): string {
-  if (!epoch) return '';
+  if (!epoch) return "";
   const d = new Date(epoch * 1000);
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
@@ -75,15 +94,15 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
 
   const handleCopy = () => {
     let fullUrl = downloadUrl;
-    if (downloadUrl.startsWith('/')) {
+    if (downloadUrl.startsWith("/")) {
       fullUrl = `${window.location.origin}${downloadUrl}`;
     }
     copyToClipboard(fullUrl);
   };
 
   const meta = file.is_dir
-    ? 'Folder'
-    : [formatDate(file.modified), prettyBytes(file.size)].filter(Boolean).join(' · ');
+    ? "Folder"
+    : [formatDate(file.modified), prettyBytes(file.size)].filter(Boolean).join(" · ");
 
   // Shared icon and name blocks used by both directory and file layouts
   const iconBox = (
@@ -92,10 +111,10 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
         width: 38,
         height: 38,
         borderRadius: 2.5,
-        bgcolor: 'background.paper',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        bgcolor: "background.paper",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         flexShrink: 0,
       }}
     >
@@ -105,12 +124,7 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
 
   const nameBox = (
     <Box sx={{ flex: 1, minWidth: 0 }}>
-      <Typography
-        variant="body2"
-        sx={{ fontWeight: 500 }}
-        noWrap
-        title={file.name}
-      >
+      <Typography variant="body2" sx={{ fontWeight: 500 }} noWrap title={file.name}>
         {file.name}
       </Typography>
       <Typography variant="caption" color="text.secondary" noWrap>
@@ -124,10 +138,10 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
       elevation={0}
       sx={{
         borderBottom: 1,
-        borderColor: 'divider',
+        borderColor: "divider",
         borderRadius: 0,
-        bgcolor: 'background.default',
-        '&:last-child': { borderBottom: 'none' },
+        bgcolor: "background.default",
+        "&:last-child": { borderBottom: "none" },
       }}
     >
       {/* Directories: entire row is clickable via CardActionArea */}
@@ -135,12 +149,12 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
         <CardActionArea
           onClick={handleRowClick}
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 1.5,
             px: 2,
             py: 1.25,
-            justifyContent: 'flex-start',
+            justifyContent: "flex-start",
           }}
         >
           {iconBox}
@@ -150,8 +164,8 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
         /* Files: plain row with icon, name, and action buttons */
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 1.5,
             px: 2,
             py: 1.25,
@@ -161,9 +175,7 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
           {nameBox}
 
           {/* Action buttons */}
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}
-          >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
             {isPreviewable(file.name) && (
               <Tooltip title="Preview">
                 <IconButton size="small" onClick={() => onPreview(file)}>
@@ -175,7 +187,7 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
               <MuiLink
                 href={downloadUrl}
                 download={file.name}
-                sx={{ display: 'flex', color: 'text.secondary' }}
+                sx={{ display: "flex", color: "text.secondary" }}
               >
                 <IconButton size="small" component="span">
                   <DownloadIcon fontSize="small" />
@@ -198,4 +210,3 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
     </Card>
   );
 }
-

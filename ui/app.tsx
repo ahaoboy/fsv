@@ -1,24 +1,22 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Box, Container, Typography, CircularProgress, Button } from '@mui/material';
-import { useFileList } from './hooks/useFileList';
-import { useWebSocket } from './hooks/useWebSocket';
-import { copyToClipboard, fileUrl, shutdownServer } from './api';
-import { Header } from './components/Header';
-import { FileCard } from './components/FileCard';
-import { PreviewModal } from './components/PreviewModal';
-import { QrModal } from './components/QrModal';
-import { SettingsModal } from './components/SettingsModal';
-import { WsToast } from './components/WsToast';
-import type { FileInfo } from './types';
-import { pathFromHash, setHashPath } from './hashRoute';
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Box, Container, Typography, CircularProgress, Button } from "@mui/material";
+import { useFileList } from "./hooks/useFileList";
+import { useWebSocket } from "./hooks/useWebSocket";
+import { copyToClipboard, fileUrl, shutdownServer } from "./api";
+import { Header } from "./components/Header";
+import { FileCard } from "./components/FileCard";
+import { PreviewModal } from "./components/PreviewModal";
+import { QrModal } from "./components/QrModal";
+import { SettingsModal } from "./components/SettingsModal";
+import { WsToast } from "./components/WsToast";
+import type { FileInfo } from "./types";
+import { pathFromHash, setHashPath } from "./hashRoute";
 
 /** Main application component. */
 export function App() {
   const [currentPath, setCurrentPath] = useState(pathFromHash);
-  const [search, setSearch] = useState('');
-  const [apiBase, setApiBase] = useState(
-    () => localStorage.getItem('fsv_api_base') ?? '/',
-  );
+  const [search, setSearch] = useState("");
+  const [apiBase, setApiBase] = useState(() => localStorage.getItem("fsv_api_base") ?? "/");
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
   const [qrFile, setQrFile] = useState<FileInfo | null>(null);
@@ -41,7 +39,7 @@ export function App() {
   const getQrUrl = (file: FileInfo) => {
     const url = fileUrl(apiBase, file.path);
     // If apiBase is relative (starts with /), prepend the origin to make a full URL
-    if (url.startsWith('/')) {
+    if (url.startsWith("/")) {
       return window.location.origin + url;
     }
     return url;
@@ -50,7 +48,7 @@ export function App() {
   // Navigate to a path and update the URL hash
   const navigateTo = useCallback((path: string) => {
     setCurrentPath(path);
-    setSearch('');
+    setSearch("");
     setHashPath(path);
   }, []);
 
@@ -58,10 +56,10 @@ export function App() {
   useEffect(() => {
     const handler = () => {
       setCurrentPath(pathFromHash());
-      setSearch('');
+      setSearch("");
     };
-    window.addEventListener('hashchange', handler);
-    return () => window.removeEventListener('hashchange', handler);
+    window.addEventListener("hashchange", handler);
+    return () => window.removeEventListener("hashchange", handler);
   }, []);
 
   // Shutdown the server
@@ -87,13 +85,13 @@ export function App() {
       disableGutters
       maxWidth="sm"
       sx={{
-        minHeight: '100svh',
-        display: 'flex',
-        flexDirection: 'column',
+        minHeight: "100svh",
+        display: "flex",
+        flexDirection: "column",
         borderLeft: 1,
         borderRight: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.default',
+        borderColor: "divider",
+        bgcolor: "background.default",
       }}
     >
       {/* ── Header ── */}
@@ -112,16 +110,16 @@ export function App() {
       />
 
       {/* ── File List ── */}
-      <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box component="main" sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Loading state */}
         {loading && (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               gap: 2,
               py: 6,
             }}
@@ -138,14 +136,14 @@ export function App() {
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               gap: 1.5,
               py: 6,
               px: 3,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             <Typography variant="h4" sx={{ opacity: 0.5 }}>
@@ -165,21 +163,21 @@ export function App() {
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               gap: 1.5,
               py: 6,
               px: 3,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             <Typography variant="h4" sx={{ opacity: 0.5 }}>
               📁
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {search ? 'No files match your search.' : 'This folder is empty.'}
+              {search ? "No files match your search." : "This folder is empty."}
             </Typography>
           </Box>
         )}
@@ -205,17 +203,15 @@ export function App() {
       {previewFile && (
         <PreviewModal
           file={previewFile}
+          files={files}
           apiBase={apiBase}
           onClose={() => setPreviewFile(null)}
+          onPreviewFile={setPreviewFile}
         />
       )}
 
       {qrFile && (
-        <QrModal
-          url={getQrUrl(qrFile)}
-          fileName={qrFile.name}
-          onClose={() => setQrFile(null)}
-        />
+        <QrModal url={getQrUrl(qrFile)} fileName={qrFile.name} onClose={() => setQrFile(null)} />
       )}
 
       {showSettings && (
@@ -227,10 +223,7 @@ export function App() {
       )}
 
       {/* ── WS Toast ── */}
-      {wsToast && (
-        <WsToast message={wsToast} onClose={() => setWsToast(null)} />
-      )}
+      {wsToast && <WsToast message={wsToast} onClose={() => setWsToast(null)} />}
     </Container>
   );
 }
-

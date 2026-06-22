@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import QRCodeLib from 'qrcode';
+import { useState, useEffect } from "react";
+import QRCodeLib from "qrcode";
 import {
   Dialog,
   DialogTitle,
@@ -8,8 +8,8 @@ import {
   Box,
   Typography,
   CircularProgress,
-} from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+} from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 
 interface Props {
   url: string;
@@ -32,12 +32,12 @@ export function QrModal({ url, fileName, onClose }: Props) {
     setError(null);
     generateQR(url)
       .then(setDataUrl)
-      .catch((e: Error) => setError(e.message ?? 'Failed to generate QR code'));
+      .catch((e: Error) => setError(e.message ?? "Failed to generate QR code"));
   }, [url]);
 
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Typography variant="body1" sx={{ fontWeight: 500, flex: 1 }}>
           Scan to download
         </Typography>
@@ -46,7 +46,7 @@ export function QrModal({ url, fileName, onClose }: Props) {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ textAlign: 'center', py: 3 }}>
+      <DialogContent sx={{ textAlign: "center", py: 3 }}>
         {error ? (
           <Typography variant="body2" color="error">
             {error}
@@ -58,10 +58,10 @@ export function QrModal({ url, fileName, onClose }: Props) {
             alt="QR code"
             width={256}
             height={256}
-            sx={{ borderRadius: 1, display: 'block', mx: 'auto' }}
+            sx={{ borderRadius: 1, display: "block", mx: "auto" }}
           />
         ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress size={40} />
           </Box>
         )}
@@ -74,9 +74,9 @@ export function QrModal({ url, fileName, onClose }: Props) {
           color="text.secondary"
           sx={{
             mt: 0.5,
-            wordBreak: 'break-all',
-            fontFamily: 'monospace',
-            display: 'block',
+            wordBreak: "break-all",
+            fontFamily: "monospace",
+            display: "block",
           }}
         >
           {url}
@@ -85,4 +85,3 @@ export function QrModal({ url, fileName, onClose }: Props) {
     </Dialog>
   );
 }
-

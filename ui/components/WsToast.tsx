@@ -1,10 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Snackbar, Alert, IconButton, Box } from '@mui/material';
-import {
-  Close as CloseIcon,
-  ContentCopy as CopyIcon,
-} from '@mui/icons-material';
-import { copyToClipboard } from '../api';
+import { useEffect, useRef } from "react";
+import { Snackbar, Alert, IconButton, Box } from "@mui/material";
+import { Close as CloseIcon, ContentCopy as CopyIcon } from "@mui/icons-material";
+import { copyToClipboard } from "../api";
 
 interface Props {
   message: string;
@@ -29,19 +26,19 @@ export function WsToast({ message, onClose }: Props) {
   return (
     <Snackbar
       open
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      sx={{ maxWidth: 420, width: 'calc(100vw - 32px)' }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      sx={{ maxWidth: 420, width: "calc(100vw - 32px)" }}
     >
       <Alert
         severity="info"
         variant="filled"
         sx={{
-          width: '100%',
-          alignItems: 'center',
-          '& .MuiAlert-message': { flex: 1, minWidth: 0 },
+          width: "100%",
+          alignItems: "center",
+          "& .MuiAlert-message": { flex: 1, minWidth: 0 },
         }}
         action={
-          <Box sx={{ display: 'flex', gap: 0.25 }}>
+          <Box sx={{ display: "flex", gap: 0.25 }}>
             <IconButton
               ref={copyBtnRef}
               size="small"
@@ -51,22 +48,14 @@ export function WsToast({ message, onClose }: Props) {
             >
               <CopyIcon fontSize="small" />
             </IconButton>
-            <IconButton
-              size="small"
-              color="inherit"
-              onClick={onClose}
-              title="Dismiss"
-            >
+            <IconButton size="small" color="inherit" onClick={onClose} title="Dismiss">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         }
       >
-        <Box sx={{ fontSize: 13, wordBreak: 'break-word', lineHeight: 1.4 }}>
-          {message}
-        </Box>
+        <Box sx={{ fontSize: 13, wordBreak: "break-word", lineHeight: 1.4 }}>{message}</Box>
       </Alert>
     </Snackbar>
   );
 }
-

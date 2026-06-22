@@ -1,9 +1,10 @@
 {
   "name": "ui",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
+    "pre-check": "oxfmt && oxlint --fix",
     "dev": "vite",
     "build": "vite build && npm run icon",
     "icon": "tsx ./public/icon.ts",
@@ -13,22 +14,24 @@
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@mui/icons-material": "9.0.1",
-    "@mui/material": "9.0.1",
+    "@mui/icons-material": "9.1.1",
+    "@mui/material": "9.1.1",
     "pretty-bytes": "7.1.0",
     "qrcode": "1.5.4",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
-    "tsx": "^4.22.3"
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
-    "@types/node": "25.9.1",
+    "@types/node": "26.0.0",
     "@types/qrcode": "1.5.6",
-    "@types/react": "19.2.15",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
+    "oxfmt": "0.55.0",
+    "oxlint": "1.70.0",
     "typescript": "6.0.3",
-    "vite": "8.0.14",
+    "vite": "8.0.16",
     "vite-plugin-singlefile": "2.3.3"
   }
 }

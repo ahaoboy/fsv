@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,59 +9,100 @@ import {
   CircularProgress,
   Button,
   Link,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Close as CloseIcon,
   Download as DownloadIcon,
-} from '@mui/icons-material';
-import { fileUrl } from '../api';
-import type { FileInfo } from '../types';
+  ChevronLeft as PrevIcon,
+  ChevronRight as NextIcon,
+} from "@mui/icons-material";
+import { fileUrl } from "../api";
+import type { FileInfo } from "../types";
 
 interface Props {
   file: FileInfo;
+  files: FileInfo[];
   apiBase: string;
   onClose: () => void;
+  onPreviewFile: (file: FileInfo) => void;
 }
 
-type PreviewKind = 'text' | 'image' | 'video' | 'audio' | 'unsupported';
+type PreviewKind = "text" | "image" | "video" | "audio" | "unsupported";
 
 /** File extension sets for preview type detection. */
 const TEXT_EXTS = new Set([
-  'rs', 'toml', 'json', 'md', 'txt', 'js', 'ts', 'tsx', 'jsx',
-  'css', 'html', 'htm', 'yaml', 'yml', 'sh', 'py', 'go', 'c',
-  'cpp', 'h', 'java', 'rb', 'php', 'xml', 'svg', 'lock', 'gitignore', 'env',
+  "rs",
+  "toml",
+  "json",
+  "md",
+  "txt",
+  "js",
+  "ts",
+  "tsx",
+  "jsx",
+  "css",
+  "html",
+  "htm",
+  "yaml",
+  "yml",
+  "sh",
+  "py",
+  "go",
+  "c",
+  "cpp",
+  "h",
+  "java",
+  "rb",
+  "php",
+  "xml",
+  "svg",
+  "lock",
+  "gitignore",
+  "env",
 ]);
-const IMAGE_EXTS = new Set([
-  'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'bmp', 'avif',
-]);
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'mov']);
-const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a']);
+const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp", "ico", "bmp", "avif"]);
+const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "mov"]);
+const AUDIO_EXTS = new Set(["mp3", "wav", "ogg", "flac", "aac", "m4a"]);
 
 /** Determine the preview kind from a filename. */
 function getKind(name: string): PreviewKind {
-  const ext = name.split('.').pop()?.toLowerCase() ?? '';
-  if (TEXT_EXTS.has(ext)) return 'text';
-  if (IMAGE_EXTS.has(ext)) return 'image';
-  if (VIDEO_EXTS.has(ext)) return 'video';
-  if (AUDIO_EXTS.has(ext)) return 'audio';
-  return 'unsupported';
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (TEXT_EXTS.has(ext)) return "text";
+  if (IMAGE_EXTS.has(ext)) return "image";
+  if (VIDEO_EXTS.has(ext)) return "video";
+  if (AUDIO_EXTS.has(ext)) return "audio";
+  return "unsupported";
 }
 
 /** Check if a file can be previewed. */
 export function isPreviewable(name: string): boolean {
-  return getKind(name) !== 'unsupported';
+  return getKind(name) !== "unsupported";
 }
 
 /** Modal dialog for previewing file content (text, image, video, audio). */
-export function PreviewModal({ file, apiBase, onClose }: Props) {
+export function PreviewModal({ file, files, apiBase, onClose, onPreviewFile }: Props) {
   const [textContent, setTextContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const url = fileUrl(apiBase, file.path);
   const kind = getKind(file.name);
 
+  // Build an ordered list of same-kind previewable files (including current).
+  const sameKind = useMemo(() => files.filter((f) => getKind(f.name) === kind), [files, kind]);
+  const currentIndex = sameKind.findIndex((f) => f.path === file.path);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < sameKind.length - 1;
+
+  const goPrev = useCallback(() => {
+    if (hasPrev) onPreviewFile(sameKind[currentIndex - 1]);
+  }, [hasPrev, sameKind, currentIndex, onPreviewFile]);
+
+  const goNext = useCallback(() => {
+    if (hasNext) onPreviewFile(sameKind[currentIndex + 1]);
+  }, [hasNext, sameKind, currentIndex, onPreviewFile]);
+
   useEffect(() => {
-    if (kind !== 'text') return;
+    if (kind !== "text") return;
     setLoading(true);
     fetch(url)
       .then((r) => r.text())
@@ -77,14 +118,14 @@ export function PreviewModal({ file, apiBase, onClose }: Props) {
       maxWidth="md"
       fullWidth
       slotProps={{
-        paper: { sx: { height: { xs: '100%', sm: '80vh' }, m: { xs: 0, sm: 2 } } },
+        paper: { sx: { maxHeight: { xs: "100%", sm: "80vh" }, m: { xs: 0, sm: 2 } } },
       }}
     >
       {/* Title bar */}
       <DialogTitle
         sx={{
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 1,
           pr: 1,
         }}
@@ -92,7 +133,7 @@ export function PreviewModal({ file, apiBase, onClose }: Props) {
         <Typography variant="body1" sx={{ fontWeight: 500, flex: 1 }} noWrap>
           {file.name}
         </Typography>
-        <Link href={url} download={file.name} sx={{ display: 'flex' }}>
+        <Link href={url} download={file.name} sx={{ display: "flex" }}>
           <IconButton size="small" component="span" title="Download">
             <DownloadIcon fontSize="small" />
           </IconButton>
@@ -107,16 +148,26 @@ export function PreviewModal({ file, apiBase, onClose }: Props) {
         dividers
         sx={{
           p: 0,
-          bgcolor: 'background.paper',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          bgcolor: "background.paper",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         }}
       >
         {/* Text preview */}
-        {kind === 'text' &&
+        {kind === "text" &&
           (loading ? (
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, p: 3 }}>
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 2,
+                p: 3,
+              }}
+            >
               <CircularProgress size={32} />
               <Typography variant="body2">Loading…</Typography>
             </Box>
@@ -126,101 +177,121 @@ export function PreviewModal({ file, apiBase, onClose }: Props) {
               sx={{
                 flex: 1,
                 m: 0,
-                overflow: 'auto',
+                overflow: "auto",
                 p: 2,
                 fontSize: 12,
                 lineHeight: 1.6,
-                fontFamily: 'monospace',
-                whiteSpace: 'pre',
-                color: 'text.primary',
+                fontFamily: "monospace",
+                whiteSpace: "pre",
+                color: "text.primary",
               }}
             >
-              <code>{textContent}</code>
+              {textContent}
             </Box>
           ))}
 
         {/* Image preview */}
-        {kind === 'image' && (
+        {kind === "image" && (
           <Box
+            component="img"
+            src={url}
+            alt={file.name}
             sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              p: 2,
-              overflow: 'auto',
+              display: "block",
+              maxWidth: "100%",
+              maxHeight: { xs: "70vh", sm: "80vh" },
+              objectFit: "contain",
+              borderRadius: 1,
+              // Margin auto absorbs extra space from the flex-column parent
+              // so the image sizes to its own dimensions instead of stretching.
+              m: "auto",
             }}
-          >
-            <Box
-              component="img"
-              src={url}
-              alt={file.name}
-              sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 1 }}
-            />
-          </Box>
+          />
         )}
 
         {/* Video preview */}
-        {kind === 'video' && (
+        {kind === "video" && (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               p: 2,
-              overflow: 'auto',
+              overflow: "auto",
             }}
           >
             <Box
               component="video"
               src={url}
               controls
-              sx={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 1 }}
+              sx={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 1 }}
             />
           </Box>
         )}
 
         {/* Audio preview */}
-        {kind === 'audio' && (
+        {kind === "audio" && (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               p: 4,
             }}
           >
-            <Box component="audio" src={url} controls sx={{ width: '100%' }} />
+            <Box component="audio" src={url} controls sx={{ width: "100%" }} />
           </Box>
         )}
 
         {/* Unsupported type */}
-        {kind === 'unsupported' && (
+        {kind === "unsupported" && (
           <Box
             sx={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
               gap: 2,
               p: 4,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
-            <Typography variant="body2">
-              Preview not available for this file type.
-            </Typography>
+            <Typography variant="body2">Preview not available for this file type.</Typography>
             <Button variant="contained" href={url} download={file.name}>
               Download instead
             </Button>
           </Box>
         )}
       </DialogContent>
+
+      {/* ── Prev / Next navigation ── */}
+      {sameKind.length > 1 && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 1,
+            py: 0.5,
+            borderTop: 1,
+            borderColor: "divider",
+          }}
+        >
+          <IconButton size="small" onClick={goPrev} disabled={!hasPrev} title="Previous">
+            <PrevIcon fontSize="small" />
+          </IconButton>
+          <Typography variant="caption" color="text.secondary">
+            {currentIndex + 1} / {sameKind.length}
+          </Typography>
+          <IconButton size="small" onClick={goNext} disabled={!hasNext} title="Next">
+            <NextIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      )}
     </Dialog>
   );
 }
-
