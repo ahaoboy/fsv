@@ -18,13 +18,11 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing subscriber.  Set RUST_LOG to control verbosity, e.g.:
-    //   RUST_LOG=info       → default production level
-    //   RUST_LOG=debug      → verbose request/response logging
-    //   RUST_LOG=fsv=trace  → ultra-verbose (includes tower-http traces)
+    // Logs go to stderr.  Set RUST_LOG to control verbosity; default is "warn"
+    // so the terminal stays clean.  Use RUST_LOG=info / debug / trace to debug.
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn")),
         )
         .with_target(false)
         .init();
