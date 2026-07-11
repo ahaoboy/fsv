@@ -17,8 +17,11 @@ import {
   Settings as SettingsIcon,
   PowerSettingsNew as PowerIcon,
   GitHub as GitHubIcon,
+  SortByAlpha as SortNameIcon,
+  CalendarToday as SortDateIcon,
+  DataUsage as SortSizeIcon,
 } from "@mui/icons-material";
-import type { WsStatus } from "../types";
+import type { WsStatus, SortKey } from "../types";
 
 interface Breadcrumb {
   name: string;
@@ -48,12 +51,15 @@ interface HeaderProps {
   currentPath: string;
   search: string;
   wsStatus: WsStatus;
+  sortKey: SortKey;
+  sortAsc: boolean;
   shuttingDown: boolean;
   onSearchChange: (value: string) => void;
   onNavigate: (path: string) => void;
   onRefresh: () => void;
   onOpenSettings: () => void;
   onShutdown: () => void;
+  onSortKeyChange: (key: SortKey) => void;
 }
 
 /** App header with brand, breadcrumbs, search bar, and controls. */
@@ -61,12 +67,15 @@ export function Header({
   currentPath,
   search,
   wsStatus,
+  sortKey,
+  sortAsc,
   shuttingDown,
   onSearchChange,
   onNavigate,
   onRefresh,
   onOpenSettings,
   onShutdown,
+  onSortKeyChange,
 }: HeaderProps) {
   const crumbs = getBreadcrumbs(currentPath);
 
@@ -184,7 +193,7 @@ export function Header({
           )}
         </Breadcrumbs>
 
-        {/* Search + Refresh */}
+        {/* Search + Refresh + Sort */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <TextField
             size="small"
@@ -206,6 +215,60 @@ export function Header({
               "& .MuiOutlinedInput-root": { borderRadius: 2 },
             }}
           />
+
+          {/* Sort controls */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Tooltip
+              title={sortKey === "name" ? (sortAsc ? "Name A→Z" : "Name Z→A") : "Sort by name"}
+            >
+              <IconButton
+                size="small"
+                color={sortKey === "name" ? "primary" : "default"}
+                onClick={() => onSortKeyChange("name")}
+              >
+                {sortKey === "name" ? (
+                  sortAsc ? (
+                    <SortNameIcon fontSize="small" />
+                  ) : (
+                    <SortNameIcon fontSize="small" sx={{ transform: "scaleY(-1)" }} />
+                  )
+                ) : (
+                  <SortNameIcon fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+            <Tooltip
+              title={
+                sortKey === "modified"
+                  ? sortAsc
+                    ? "Oldest first"
+                    : "Newest first"
+                  : "Sort by date"
+              }
+            >
+              <IconButton
+                size="small"
+                color={sortKey === "modified" ? "primary" : "default"}
+                onClick={() => onSortKeyChange("modified")}
+              >
+                <SortDateIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip
+              title={
+                sortKey === "size" ? (sortAsc ? "Smallest first" : "Largest first") : "Sort by size"
+              }
+            >
+              <IconButton
+                size="small"
+                color={sortKey === "size" ? "primary" : "default"}
+                onClick={() => onSortKeyChange("size")}
+              >
+                <SortSizeIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
           <Tooltip title="Refresh">
             <IconButton onClick={onRefresh} size="small">
               <RefreshIcon fontSize="small" />

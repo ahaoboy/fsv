@@ -9,14 +9,50 @@ import { PreviewModal } from "./components/PreviewModal";
 import { QrModal } from "./components/QrModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { WsToast } from "./components/WsToast";
-import type { FileInfo } from "./types";
+import type { FileInfo, SortKey } from "./types";
 import { pathFromHash, setHashPath } from "./hashRoute";
+
+/** Sort a file list in place: dirs first, then by key, then by name as tiebreaker. */
+function sortFiles(list: FileInfo[], key: SortKey, asc: boolean): FileInfo[] {
+  const dirs = list.filter((f) => f.is_dir);
+  const files = list.filter((f) => !f.is_dir);
+
+  // Sort directories by name only (always ascending).
+  dirs.sort((a, b) => a.name.localeCompare(b.name));
+
+  const cmp = (a: FileInfo, b: FileInfo): number => {
+    let r: number;
+    switch (key) {
+      case "name":
+        r = a.name.localeCompare(b.name);
+        break;
+      case "modified": {
+        const ma = a.modified ?? 0;
+        const mb = b.modified ?? 0;
+        r = ma - mb;
+        break;
+      }
+      case "size":
+        r = a.size - b.size;
+        break;
+    }
+    // Tiebreaker: always sort by name if same value.
+    return r !== 0 ? r : a.name.localeCompare(b.name);
+  };
+
+  files.sort(cmp);
+  if (!asc) files.reverse();
+
+  return [...dirs, ...files];
+}
 
 /** Main application component. */
 export function App() {
   const [currentPath, setCurrentPath] = useState(pathFromHash);
   const [search, setSearch] = useState("");
   const [apiBase, setApiBase] = useState(() => localStorage.getItem("fsv_api_base") ?? "/");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortAsc, setSortAsc] = useState(true);
 
   const [previewFile, setPreviewFile] = useState<FileInfo | null>(null);
   const [qrFile, setQrFile] = useState<FileInfo | null>(null);
@@ -31,10 +67,21 @@ export function App() {
     copyToClipboard(msg);
   });
 
-  const filtered = useMemo(
-    () => files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())),
-    [files, search],
-  );
+  const handleSortChange = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortAsc((v) => !v);
+      } else {
+        setSortAsc(true);
+      }
+      return key;
+    });
+  }, []);
+
+  const filtered = useMemo(() => {
+    const matched = files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
+    return sortFiles(matched, sortKey, sortAsc);
+  }, [files, search, sortKey, sortAsc]);
 
   const getQrUrl = (file: FileInfo) => {
     const url = fileUrl(apiBase, file.path);
@@ -99,6 +146,9 @@ export function App() {
         currentPath={currentPath}
         search={search}
         wsStatus={wsStatus}
+        sortKey={sortKey}
+        sortAsc={sortAsc}
+        shuttingDown={shuttingDown}
         onSearchChange={setSearch}
         onNavigate={(path) => {
           navigateTo(path);
@@ -106,7 +156,7 @@ export function App() {
         onRefresh={refresh}
         onOpenSettings={() => setShowSettings(true)}
         onShutdown={handleShutdown}
-        shuttingDown={shuttingDown}
+        onSortKeyChange={handleSortChange}
       />
 
       {/* ── File List ── */}

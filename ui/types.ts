@@ -7,6 +7,9 @@ export interface FileInfo {
   modified: number | null;
 }
 
+/** Sort key for the file list. */
+export type SortKey = "name" | "modified" | "size";
+
 /** WebSocket connection status. */
 export type WsStatus = "connecting" | "connected" | "disconnected";
 
