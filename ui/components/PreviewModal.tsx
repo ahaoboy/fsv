@@ -15,6 +15,8 @@ import {
   Download as DownloadIcon,
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
+  Code as SourceIcon,
+  Language as WebIcon,
 } from "@mui/icons-material";
 import { fileUrl } from "../api";
 import type { FileInfo } from "../types";
@@ -27,7 +29,7 @@ interface Props {
   onPreviewFile: (file: FileInfo) => void;
 }
 
-type PreviewKind = "text" | "image" | "video" | "audio" | "unsupported";
+type PreviewKind = "text" | "image" | "video" | "audio" | "html" | "unsupported";
 
 /** File extension sets for preview type detection. */
 const TEXT_EXTS = new Set([
@@ -63,10 +65,12 @@ const TEXT_EXTS = new Set([
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "webp", "ico", "bmp", "avif"]);
 const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "mov"]);
 const AUDIO_EXTS = new Set(["mp3", "wav", "ogg", "flac", "aac", "m4a"]);
+const HTML_EXTS = new Set(["html", "htm"]);
 
 /** Determine the preview kind from a filename. */
 function getKind(name: string): PreviewKind {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (HTML_EXTS.has(ext)) return "html";
   if (TEXT_EXTS.has(ext)) return "text";
   if (IMAGE_EXTS.has(ext)) return "image";
   if (VIDEO_EXTS.has(ext)) return "video";
@@ -83,6 +87,7 @@ export function isPreviewable(name: string): boolean {
 export function PreviewModal({ file, files, apiBase, onClose, onPreviewFile }: Props) {
   const [textContent, setTextContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"webpage" | "source">("source");
 
   const url = fileUrl(apiBase, file.path);
   const kind = getKind(file.name);
@@ -102,14 +107,15 @@ export function PreviewModal({ file, files, apiBase, onClose, onPreviewFile }: P
   }, [hasNext, sameKind, currentIndex, onPreviewFile]);
 
   useEffect(() => {
-    if (kind !== "text") return;
+    const shouldFetchText = kind === "text" || (kind === "html" && viewMode === "source");
+    if (!shouldFetchText) return;
     setLoading(true);
     fetch(url)
       .then((r) => r.text())
       .then((t) => setTextContent(t))
       .catch((e: Error) => setTextContent(`Error: ${e.message}`))
       .finally(() => setLoading(false));
-  }, [url, kind]);
+  }, [url, kind, viewMode]);
 
   return (
     <Dialog
@@ -138,6 +144,15 @@ export function PreviewModal({ file, files, apiBase, onClose, onPreviewFile }: P
             <DownloadIcon fontSize="small" />
           </IconButton>
         </Link>
+        {kind === "html" && (
+          <IconButton
+            size="small"
+            title={viewMode === "webpage" ? "View source" : "View webpage"}
+            onClick={() => setViewMode((m) => (m === "webpage" ? "source" : "webpage"))}
+          >
+            {viewMode === "webpage" ? <SourceIcon fontSize="small" /> : <WebIcon fontSize="small" />}
+          </IconButton>
+        )}
         <IconButton size="small" onClick={onClose} aria-label="Close">
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -245,6 +260,65 @@ export function PreviewModal({ file, files, apiBase, onClose, onPreviewFile }: P
             <Box component="audio" src={url} controls sx={{ width: "100%" }} />
           </Box>
         )}
+
+        {/* HTML preview */}
+        {kind === "html" &&
+          (viewMode === "source" ? (
+            loading ? (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
+                  p: 3,
+                }}
+              >
+                <CircularProgress size={32} />
+                <Typography variant="body2">Loading…</Typography>
+              </Box>
+            ) : (
+              <Box
+                component="pre"
+                sx={{
+                  flex: 1,
+                  m: 0,
+                  overflow: "auto",
+                  p: 2,
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  fontFamily: "monospace",
+                  whiteSpace: "pre",
+                  color: "text.primary",
+                }}
+              >
+                {textContent}
+              </Box>
+            )
+          ) : (
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                minHeight: { xs: "60vh", sm: "70vh" },
+              }}
+            >
+              <Box
+                component="iframe"
+                src={url}
+                title={file.name}
+                sx={{
+                  flex: 1,
+                  border: "none",
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </Box>
+          ))}
 
         {/* Unsupported type */}
         {kind === "unsupported" && (

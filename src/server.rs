@@ -30,6 +30,7 @@ pub async fn run(config: Config) -> Result<Server, FsvError> {
         ws_tx: ws_tx.clone(),
         ws_connections: ws_connections.clone(),
         shutdown_notify: shutdown_notify.clone(),
+        serve: config.serve,
     };
 
     // Configure CORS to allow all origins, methods, and headers

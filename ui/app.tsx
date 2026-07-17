@@ -245,6 +245,13 @@ export function App() {
               }}
               onPreview={setPreviewFile}
               onQr={setQrFile}
+              onHtmlOpen={(f) => {
+                let url = fileUrl(apiBase, f.path);
+                if (url.startsWith("/")) {
+                  url = window.location.origin + url;
+                }
+                window.open(url, "_blank");
+              }}
             />
           ))}
       </Box>

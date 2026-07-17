@@ -11,6 +11,7 @@ use crate::error::FsvError;
 pub struct Config {
     pub path: PathBuf,
     pub port: u16,
+    pub serve: bool,
 }
 
 /// Information about the running server, returned by `run`.
@@ -52,6 +53,7 @@ pub struct AppState {
     pub ws_tx: broadcast::Sender<String>,
     pub ws_connections: Arc<AtomicUsize>,
     pub shutdown_notify: Arc<Notify>,
+    pub serve: bool,
 }
 
 /// Metadata for a single file or directory entry.

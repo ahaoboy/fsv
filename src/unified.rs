@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use percent_encoding::percent_decode_str;
+use std::path::PathBuf;
 
 use crate::error::FsvError;
 use crate::handlers;
@@ -58,8 +59,12 @@ async fn handle_get(
     path: &str,
     request: Request,
 ) -> Result<Response, FsvError> {
-    // Root path always returns the HTML UI
+    // Root path handling
     if path == "/" {
+        // In static mode, serve the actual file/folder content instead of the SPA
+        if state.serve {
+            return serve_static_root(&state).await;
+        }
         return Ok(handlers::index().await.into_response());
     }
 
@@ -140,4 +145,29 @@ async fn handle_post(
                 .unwrap())
         }
     }
+}
+
+/// In static serving mode, serve the shared file/folder content directly
+/// instead of the SPA. If the root is a file, serve it; if it's a directory,
+/// look for index.html inside and serve that.
+async fn serve_static_root(state: &AppState) -> Result<Response, FsvError> {
+    let root = &state.root_path;
+
+    if root.is_file() {
+        // Single file: serve it directly
+        let file_name = root.file_name().and_then(|n| n.to_str());
+        tracing::debug!(path = %root.display(), "static mode: serving root file");
+        return webdav::webdav_get(state, file_name).await;
+    }
+
+    // Directory: try to find index.html
+    let index_path: PathBuf = root.join("index.html");
+    if index_path.is_file() {
+        tracing::debug!(path = %index_path.display(), "static mode: serving index.html");
+        return webdav::webdav_get(state, Some("index.html")).await;
+    }
+
+    // No index.html found, fall back to the SPA
+    tracing::debug!("static mode: no index.html found, falling back to SPA");
+    Ok(handlers::index().await.into_response())
 }

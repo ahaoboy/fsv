@@ -14,6 +14,14 @@ struct Args {
     /// Port to listen on (0 = OS-assigned)
     #[arg(short = 'p', long, default_value_t = 8888)]
     port: u16,
+
+    /// Automatically open the URL in the default browser
+    #[arg(short = 'o', long, default_value_t = false)]
+    open: bool,
+
+    /// Serve as a static website (serve index.html from the target directory)
+    #[arg(short = 's', long, default_value_t = false)]
+    serve: bool,
 }
 
 #[tokio::main]
@@ -41,18 +49,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "starting fsv server"
     );
 
-    let serving_path = args.path.display().to_string();
-
     let mut info = fsv::run(fsv::Config {
         path: args.path,
         port: args.port,
+        serve: args.serve,
     })
     .await?;
     let ips = &info.ips;
     let port = info.port;
 
-    // Print all access URLs.
-    println!("fsv {}", serving_path);
+    // Print reconstructed command line.
+    let cli_args: Vec<String> = std::env::args().skip(1).collect();
+    println!("fsv {}", cli_args.join(" "));
     for ip in ips {
         let url = if ip.is_ipv6() {
             format!("http://[{ip}]:{port}")
@@ -73,21 +81,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ip) = primary {
         let url = format!("http://{}:{}", ip, port);
         qr2term::print_qr(&url).unwrap_or_else(|e| eprintln!("QR error: {e}"));
-        // Automatically open the URL in the default browser
-        if let Err(e) = open::that(&url) {
-            tracing::warn!("failed to open browser: {}", e);
-            eprintln!("Failed to open browser: {e}");
-        }
+        // Automatically open the URL in the default browser when --open is set
+        if args.open
+            && let Err(e) = open::that(&url) {
+                tracing::warn!("failed to open browser: {}", e);
+                eprintln!("Failed to open browser: {e}");
+            }
     }
 
     // Interactive prompt: each line is broadcast to all WebSocket clients.
     // Press Ctrl-C to exit, or use the web UI shutdown button.
+    // In serve mode, skip the broadcast prompt — just wait for shutdown.
+    let shutdown_notify = info.shutdown_notify.clone();
+    if args.serve {
+        println!("Running in static serve mode. Press Ctrl+C to stop.");
+        let _ = shutdown_notify.notified().await;
+        println!();
+        tracing::info!("server shut down");
+        println!("  \u{2713} server shut down");
+        return Ok(());
+    }
+
     println!("Enter to broadcast, Ctrl+C to quit");
 
     let stdin = BufReader::new(tokio::io::stdin());
     let mut lines = stdin.lines();
     let mut stdout = tokio::io::stdout();
-    let shutdown_notify = info.shutdown_notify.clone();
     let mut api_shutdown = false;
 
     loop {

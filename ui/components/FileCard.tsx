@@ -10,13 +10,13 @@ import {
 import {
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
-  Code as CodeIcon,
+  Code as SourceIcon,
   Image as ImageIcon,
   Videocam as VideoIcon,
   Download as DownloadIcon,
-  Visibility as EyeIcon,
   QrCode as QrIcon,
   ContentCopy as CopyIcon,
+  Language as HtmlIcon,
 } from "@mui/icons-material";
 import { fileUrl, copyToClipboard } from "../api";
 import type { FileInfo } from "../types";
@@ -30,6 +30,7 @@ interface Props {
   onNavigate: (file: FileInfo) => void;
   onPreview: (file: FileInfo) => void;
   onQr: (file: FileInfo) => void;
+  onHtmlOpen: (file: FileInfo) => void;
 }
 
 /** File extensions grouped by type for icon selection. */
@@ -61,6 +62,7 @@ const CODE_EXTS = new Set([
 ]);
 const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "bmp", "avif"]);
 const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "mov"]);
+const HTML_EXTS = new Set(["html", "htm"]);
 
 /** Pick the appropriate icon for a file based on its extension. */
 function getIcon(file: FileInfo): JSX.Element {
@@ -70,7 +72,7 @@ function getIcon(file: FileInfo): JSX.Element {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (IMAGE_EXTS.has(ext)) return <ImageIcon sx={{ color: "#10b981" }} fontSize="small" />;
   if (VIDEO_EXTS.has(ext)) return <VideoIcon sx={{ color: "#f59e0b" }} fontSize="small" />;
-  if (CODE_EXTS.has(ext)) return <CodeIcon sx={{ color: "#3b82f6" }} fontSize="small" />;
+  if (CODE_EXTS.has(ext)) return <SourceIcon sx={{ color: "#3b82f6" }} fontSize="small" />;
   return <FileIcon color="action" fontSize="small" />;
 }
 
@@ -85,8 +87,9 @@ function formatDate(epoch: number | null): string {
 }
 
 /** A single file or directory row in the file list. */
-export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) {
+export function FileCard({ file, apiBase, onNavigate, onPreview, onQr, onHtmlOpen }: Props) {
   const downloadUrl = fileUrl(apiBase, file.path);
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
   const handleRowClick = () => {
     if (file.is_dir) onNavigate(file);
@@ -176,12 +179,27 @@ export function FileCard({ file, apiBase, onNavigate, onPreview, onQr }: Props) 
 
           {/* Action buttons */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
-            {isPreviewable(file.name) && (
-              <Tooltip title="Preview">
-                <IconButton size="small" onClick={() => onPreview(file)}>
-                  <EyeIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+            {HTML_EXTS.has(ext) ? (
+              <>
+                <Tooltip title="View source">
+                  <IconButton size="small" onClick={() => onPreview(file)}>
+                    <SourceIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="View webpage">
+                  <IconButton size="small" onClick={() => onHtmlOpen(file)}>
+                    <HtmlIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : (
+              isPreviewable(file.name) && (
+                <Tooltip title="Preview">
+                  <IconButton size="small" onClick={() => onPreview(file)}>
+                    <SourceIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )
             )}
             <Tooltip title="Download">
               <MuiLink
