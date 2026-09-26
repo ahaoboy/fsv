@@ -5,7 +5,6 @@ edition = "2024"
 license = "MIT"
 description = "fsv"
 repository = "https://github.com/ahaoboy/fsv"
-homepage = "https://github.com/ahaoboy/fsv"
 authors = ["ahaoboy"]
 include = ["/src/**/*", "/dist/**/*", "/Cargo.toml", "/build.rs", "/README.md"]
 
