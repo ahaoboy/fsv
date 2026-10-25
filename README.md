@@ -20,12 +20,12 @@
 
 ## Building from Source
 
-Requires Rust and Node.js (with `pnpm`).
+Requires Rust and Node.js (with `pnpm/bun`).
 
 ```bash
 # 1. Build the frontend
-pnpm install
-pnpm run build
+bun install
+bun run build
 
 # 2. Build the Rust backend
 cargo build --release

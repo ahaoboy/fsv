@@ -7,26 +7,26 @@ fn main() {
     if !index_html.exists() {
         let shell = if cfg!(target_os = "windows") { "powershell" } else { "sh" };
 
-        println!("cargo:warning=dist/index.html not found, running pnpm i...");
+        println!("cargo:warning=dist/index.html not found, running bun i...");
         let status = Command::new(shell)
-            .args(["-c", "pnpm i"])
+            .args(["-c", "bun i"])
             .env("CI", "true")
             .status()
-            .expect("Failed to run pnpm i");
+            .expect("Failed to run bun i");
 
         if !status.success() {
-            panic!("pnpm i failed");
+            panic!("bun i failed");
         }
 
-        println!("cargo:warning=running pnpm run build...");
+        println!("cargo:warning=running bun run build...");
         let status = Command::new(shell)
-            .args(["-c", "pnpm run build"])
+            .args(["-c", "bun run build"])
             .env("CI", "true")
             .status()
-            .expect("Failed to run pnpm run build");
+            .expect("Failed to run bun run build");
 
         if !status.success() {
-            panic!("pnpm run build failed");
+            panic!("bun run build failed");
         }
     }
 
